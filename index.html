@@ -19,57 +19,63 @@ document.documentElement.dataset.theme = localStorage.getItem('theme') || (match
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 'Bricolage Grotesque',system-ui,sans-serif}
 button,input,select{font:inherit;color:inherit}
-button{border:0;background:none;cursor:pointer;padding:0}
+button{border:0;background:none;cursor:pointer;padding:0;text-align:left}
 :focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:var(--bg)}
 header h1{flex:1;margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
 .st{font-size:14px;padding:6px 12px;border-radius:99px;background:var(--sf);border:1px solid var(--ln)}
-.ib{width:44px;height:44px;border-radius:50%;font-size:20px;flex:none}
+.ib{width:44px;height:44px;border-radius:50%;font-size:20px;flex:none;text-align:center}
 main{max-width:640px;margin:0 auto;padding:4px 16px 130px}
 h2{font-size:17px;margin:0 0 8px;font-weight:600}
 .card{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:14px;margin:0 0 12px}
 section.card{border-left:6px solid var(--c)}
-.hero{text-align:center;padding:22px 14px}
-.hero b{display:block;font-size:72px;line-height:1;font-weight:800;color:var(--ac)}
-.hero p{margin:8px 0 0}
+.hello{margin:0 0 12px;color:var(--mu)}
+.hero{display:flex;text-align:center;padding:20px 8px}
+.hero div{flex:1}
+.hero b{display:block;font-size:56px;line-height:1;font-weight:800;color:var(--ac)}
+.hero small{display:block;margin-top:6px}
 .mu,small{color:var(--mu)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
-.cnt{background:var(--sf);border:1px solid var(--ln);border-bottom:5px solid var(--c);border-radius:14px;padding:12px}
-.cnt b{font-size:28px;margin:0 6px 0 4px}
 .row{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .row h2{margin:0}
-.lg,.task{display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--ln)}
-.lg:first-of-type,.task:first-of-type{border-top:0}
+.task,.lg{display:flex;align-items:center;gap:6px;min-height:52px;border-top:1px solid var(--ln)}
+.task:first-of-type,.lg:first-of-type{border-top:0}
+.lg{gap:10px}
+.tk{flex:1;min-width:0;display:flex;align-items:center;gap:12px;min-height:52px}
+.box{width:28px;height:28px;flex:none;border-radius:8px;border:2.5px solid var(--c);display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;line-height:1}
+.task.done .box{background:var(--c)}
+.task.just .box{animation:tick .35s}
 .tx{flex:1;min-width:0;overflow-wrap:anywhere}
-.ck{width:44px;height:44px;flex:none;border-radius:50%;border:2.5px solid var(--c);font-size:22px;font-weight:700;color:var(--c)}
-.task.done .ck{background:var(--c);color:#fff}
 .task.done .tx{text-decoration:line-through;color:var(--mu)}
 .bar{height:12px;border-radius:7px;background:var(--ln);overflow:hidden;margin:6px 0 2px}
 .bar i{display:block;height:100%;background:var(--c);border-radius:7px;transition:width .5s}
 .day{margin:14px 0 4px;font-weight:600;text-transform:capitalize}
 nav{position:fixed;bottom:0;left:0;right:0;z-index:6;display:flex;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;height:58px;font-size:12px;color:var(--mu)}
+nav button{flex:1;height:58px;font-size:13px;color:var(--mu);text-align:center}
 nav button span{display:block;font-size:20px}
 nav button.on{color:var(--ac);font-weight:600}
-.fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:7;width:64px;height:64px;border-radius:50%;background:var(--ac);color:#fff;font-size:36px;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:7;width:64px;height:64px;border-radius:50%;background:var(--ac);color:#fff;font-size:36px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.28)}
 .fab:active{transform:scale(.92)}
 .ov{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .sh{background:var(--sf);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease-out}
 .sh h2{font-size:20px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
 .cp{min-height:46px;padding:0 16px;border-radius:99px;border:2px solid var(--ln)}
-.cp.on{border-color:var(--c,var(--ac));background:color-mix(in srgb,var(--c,var(--ac)) 20%,transparent);font-weight:600}
+.sw{width:40px;height:40px;border-radius:50%;background:var(--c);border:3px solid transparent;box-shadow:inset 0 0 0 2px var(--sf)}
+.sw.on{border-color:var(--ink)}
 input,select{width:100%;min-height:48px;padding:0 12px;margin:0 0 12px;border-radius:12px;border:2px solid var(--ln);background:var(--bg)}
-input[type=color]{width:64px;padding:2px}
 label{display:block;font-size:14px;color:var(--mu)}
+.chk{display:flex;align-items:center;gap:10px;min-height:48px;margin:0 0 8px;font-size:16px;color:var(--ink)}
+.chk input{width:24px;height:24px;min-height:0;margin:0;accent-color:var(--ac)}
 .row input{margin:0}
-.big{display:block;width:100%;min-height:54px;border-radius:14px;background:var(--ac);color:#fff;font-weight:600;font-size:18px;margin-top:4px}
-.ghost{display:block;width:100%;min-height:48px;margin-top:8px;color:var(--mu)}
+.big{display:block;width:100%;min-height:54px;border-radius:14px;background:var(--ac);color:#fff;font-weight:600;font-size:18px;margin-top:4px;text-align:center}
+.ghost{display:block;width:100%;min-height:48px;margin-top:8px;color:var(--mu);text-align:center}
 .toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;background:var(--ac);color:#fff;padding:12px 18px;border-radius:99px;font-weight:600;animation:pop .35s;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 .login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;max-width:420px;margin:auto;padding:24px}
 .login h1{font-size:44px;margin:0 0 8px;letter-spacing:-.03em;font-weight:800}
+.empty{text-align:center;padding:32px 8px}
 @keyframes up{from{transform:translateY(40px);opacity:0}}
 @keyframes pop{0%{transform:translateX(-50%) scale(.6);opacity:0}60%{transform:translateX(-50%) scale(1.08)}}
+@keyframes tick{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -101,21 +107,14 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
 
 /* ============================================================
    2) ÉTAT ET OUTILS
-   Données dans Firestore :
-   users/{uid}/meta/config  → { domains: [...] }
-   users/{uid}/logs/{id}    → activités faites
-   users/{uid}/tasks/{id}   → tâches (ponctuelles ou récurrentes)
+   Données dans Firestore (même structure qu'avant, rien à migrer) :
+   users/{uid}/meta/config  → { domains: [...] }   (= tes catégories)
+   users/{uid}/tasks/{id}   → tâches
+   users/{uid}/logs/{id}    → une ligne d'historique créée à chaque case cochée
    ============================================================ */
-const DEFAULTS = [
-  { id: 'musique', name: 'Musique', emoji: '🎵', color: '#8B5CF6', goal: 3, subs: ['S’entraîner', 'Composer'] },
-  { id: 'sport', name: 'Sport', emoji: '🏋️', color: '#F97316', goal: 4, subs: ['Musculation', 'Course'] },
-  { id: 'lecture', name: 'Lecture', emoji: '📚', color: '#0EA5E9', goal: 4, subs: [] },
-  { id: 'mariage', name: 'Mariage de mes parents', emoji: '💍', color: '#E11D74', goal: 2, subs: ['Organisation', 'Activités'] },
-  { id: 'finances', name: 'Finances', emoji: '💰', color: '#16A34A', goal: 1, subs: ['Point stratégie'] }
-];
-const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'today' };
-const Q = { d: '', s: '', m: 0 };           // état du formulaire d'ajout rapide
+const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '' };
 let unsubs = [], ov = null;
+const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308', '#14B8A6', '#64748B'];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -123,11 +122,12 @@ const pad = n => String(n).padStart(2, '0');
 const dk = d => { d = new Date(d); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const wk = d => { d = new Date(d); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; }; // lundi
 const fr = (d, o) => new Date(d).toLocaleDateString('fr-FR', o);
-const fmt = m => m >= 60 ? Math.floor(m / 60) + ' h ' + pad(m % 60) : m + ' min';
-const dom = id => S.domains.find(d => d.id === id) || { id, name: 'Autre', emoji: '•', color: '#888', subs: [], goal: 0 };
+const dom = id => S.domains.find(d => d.id === id) || { id, name: 'Autre', emoji: '•', color: '#888', goal: 0 };
 const col = n => collection(db, 'users', S.uid, n);
 const cfgRef = () => doc(db, 'users', S.uid, 'meta', 'config');
+const taskRef = id => doc(col('tasks'), id);
 const weekStart = () => wk(Date.now()).getTime();
+const saveDomains = list => setDoc(cfgRef(), { domains: list }).catch(err);
 
 function toast(t) {
   document.querySelectorAll('.toast').forEach(x => x.remove());
@@ -145,100 +145,109 @@ function streak() {
 }
 
 /* ============================================================
-   3) ÉCRITURES (jamais "await" : fonctionne aussi hors-ligne)
+   3) TÂCHES : une case = fait / pas fait (on peut décocher)
+   t.repeat : 'none' (ponctuelle) | 'daily' (tous les jours) | 'weekly' (toutes les semaines)
+   Une tâche récurrente se « décoche » toute seule quand le jour / la semaine change.
    ============================================================ */
-function addLog(o) {
-  const r = doc(col('logs'));
-  setDoc(r, { ...o, ts: Date.now() }, {}).catch(err);
-  const d = dom(o.domainId);
-  const n = S.logs.filter(l => l.domainId === o.domainId && dk(l.ts) === dk(Date.now())).length + 1;
-  toast(`Bien joué ! ${d.emoji} ${n} ${d.name.toLowerCase()} aujourd’hui`);
-  return r;
+const repeatOf = t => t.repeat || (t.perWeek > 0 ? 'weekly' : 'none'); // compatible avec l'ancienne version
+function isDone(t) {
+  if (!t.done || !t.doneAt) return false;
+  const r = repeatOf(t);
+  if (r === 'daily') return dk(t.doneAt) === dk(Date.now());
+  if (r === 'weekly') return t.doneAt >= weekStart();
+  return true;
 }
-const taskRef = id => doc(col('tasks'), id);
-const weekCount = t => S.logs.filter(l => l.taskId === t.id && l.ts >= weekStart()).length;
+// Une tâche ponctuelle déjà faite disparaît le lendemain (elle reste dans les statistiques)
+const visible = t => !isDone(t) || repeatOf(t) !== 'none' || dk(t.doneAt) === dk(Date.now());
+
+function toggle(id) {
+  const t = S.tasks.find(x => x.id === id); if (!t) return;
+  if (isDone(t)) {                       // décocher : on retire aussi la ligne d'historique
+    if (t.logId) deleteDoc(doc(col('logs'), t.logId)).catch(err);
+    updateDoc(taskRef(id), { done: false, doneAt: null, logId: null }).catch(err);
+    return;
+  }
+  const r = doc(col('logs'));            // cocher : on enregistre l'activité
+  setDoc(r, { domainId: t.domainId, note: t.text, taskId: id, ts: Date.now() }).catch(err);
+  updateDoc(taskRef(id), { done: true, doneAt: Date.now(), logId: r.id }).catch(err);
+  S.just = id; setTimeout(() => { S.just = ''; }, 700);
+  const d = dom(t.domainId), n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length + 1;
+  toast(`Bien joué ! ${d.emoji} ${n} fait${n > 1 ? 'es' : 'e'} aujourd’hui`);
+}
 
 /* ============================================================
-   4) VUES
+   4) VUES : « Tâches » et « Statistiques »
    ============================================================ */
-const logRow = (l, del = true) => {
-  const txt = [l.sub, l.note].filter(Boolean).join(' · ') || 'Activité';
-  return `<div class="lg"><span class="mu">${new Date(l.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-  <span class="tx">${del ? '' : esc(dom(l.domainId).emoji) + ' '}${esc(txt)} ${l.minutes ? `<small>${l.minutes} min</small>` : ''}</span>
-  ${del ? `<button class="ib" data-act="dellog" data-id="${l.id}" aria-label="Supprimer">×</button>` : ''}</div>`;
-};
+const logRow = l => `<div class="lg"><span class="mu">${new Date(l.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+  <span class="tx">${esc(dom(l.domainId).emoji)} ${esc(l.note || l.sub || 'Activité')}</span></div>`;
 
 const V = {
-  today() {
-    const t0 = dk(Date.now()), ws = weekStart();
-    const L = S.logs.filter(l => dk(l.ts) === t0), W = S.logs.filter(l => l.ts >= ws);
-    const parts = S.domains.map(d => [d, L.filter(l => l.domainId === d.id).length]).filter(p => p[1])
-      .map(([d, n], i) => `${n}${i ? '' : ' activité' + (n > 1 ? 's' : '')} ${esc(d.name.toLowerCase())}`);
-    const min = L.reduce((s, l) => s + (l.minutes || 0), 0);
-    const msg = parts.length ? `Aujourd’hui : ${parts.join(', ')}${min ? ' · ' + fmt(min) : ''}` : 'Une page blanche, prête à accueillir ta journée.';
-    const cnt = S.domains.map(d => `<div class="cnt" style="--c:${d.color}">${d.emoji}<b>${L.filter(l => l.domainId === d.id).length}</b><small>sem. ${W.filter(l => l.domainId === d.id).length}</small></div>`).join('');
-    const groups = S.domains.map(d => {
-      const x = L.filter(l => l.domainId === d.id);
-      return x.length ? `<section class="card" style="--c:${d.color}"><h2>${d.emoji} ${esc(d.name)}</h2>${x.map(l => logRow(l)).join('')}</section>` : '';
-    }).join('');
-    return `<div class="card hero"><b>${L.length}</b><p>${msg}</p></div><div class="grid">${cnt}</div>${groups || '<p class="mu">Touche ＋ dès que tu as fait quelque chose.</p>'}`;
-  },
   tasks() {
-    return S.domains.map(d => {
-      const T = S.tasks.filter(t => t.domainId === d.id && (!t.done || Date.now() - t.doneAt < 7 * 864e5))
-        .sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || a.createdAt - b.createdAt);
+    if (!S.domains.length) return `<div class="empty"><p>Crée ta première catégorie (Sport, Lecture, Travail…) pour y ranger tes tâches.</p><button class="big" data-act="domform" data-id="">＋ Créer une catégorie</button></div>`;
+    const n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length;
+    const hello = `<p class="hello">${n ? `✨ ${n} chose${n > 1 ? 's' : ''} faite${n > 1 ? 's' : ''} aujourd’hui` : 'Prêt pour la journée 🌿'}</p>`;
+    const cards = S.domains.map(d => {
+      const T = S.tasks.filter(t => t.domainId === d.id && visible(t))
+        .sort((a, b) => isDone(a) - isDone(b) || a.createdAt - b.createdAt);
       const rows = T.map(t => {
-        const rec = t.perWeek > 0, n = rec ? weekCount(t) : 0, ok = rec ? n >= t.perWeek : t.done;
-        return `<div class="task ${ok ? 'done' : ''}" style="--c:${d.color}">
-          <button class="ck" data-act="tick" data-id="${t.id}" aria-label="Valider">${rec && !ok ? '+' : ok ? '✓' : ''}</button>
-          <div class="tx">${esc(t.text)}<br><small>${esc(t.sub || '')}${t.sub && rec ? ' · ' : ''}${rec ? `${n}/${t.perWeek} cette semaine` : ''}</small></div>
+        const ok = isDone(t), r = repeatOf(t);
+        const sub = r === 'daily' ? 'Tous les jours' : r === 'weekly' ? 'Chaque semaine' : '';
+        return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" style="--c:${d.color}">
+          <button class="tk" role="checkbox" aria-checked="${ok}" data-act="tick" data-id="${t.id}"><span class="box">${ok ? '✓' : ''}</span>
+            <span class="tx">${esc(t.text)}${sub ? `<br><small>🔁 ${sub}</small>` : ''}</span></button>
           <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button></div>`;
       }).join('');
-      return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><button class="ib" data-act="taskform" data-d="${d.id}" aria-label="Ajouter une tâche">＋</button></div>${rows || '<small>Aucune tâche pour l’instant.</small>'}</section>`;
+      return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button></div>${rows || '<small>Aucune tâche pour l’instant.</small>'}</section>`;
     }).join('');
+    return hello + cards + `<button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`;
   },
-  week() {
-    const ws = weekStart(), W = S.logs.filter(l => l.ts >= ws), min = W.reduce((s, l) => s + (l.minutes || 0), 0);
+  stats() {
+    const t0 = dk(Date.now()), ws = weekStart();
+    const L = S.logs.filter(l => dk(l.ts) === t0), W = S.logs.filter(l => l.ts >= ws);
+    // Message positif du jour
+    const parts = S.domains.map(d => [d, L.filter(l => l.domainId === d.id).length]).filter(p => p[1]).map(([d, k]) => `${k} en ${esc(d.name.toLowerCase())}`);
+    const msg = parts.length ? `Aujourd’hui : ${parts.join(', ')}` : 'Une page blanche, prête à accueillir ta journée.';
+    // Cette semaine, par catégorie, avec barre d'objectif si défini
     const rows = S.domains.map(d => {
-      const x = W.filter(l => l.domainId === d.id), n = x.length, m = x.reduce((s, l) => s + (l.minutes || 0), 0);
-      return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><b>${n}${d.goal ? ' / ' + d.goal : ''}</b></div>
-        ${d.goal ? `<div class="bar"><i style="width:${Math.min(100, n / d.goal * 100)}%"></i></div>` : ''}
-        <small>${n >= d.goal && d.goal ? 'Objectif atteint 🎉' : n + ' activité' + (n > 1 ? 's' : '')}${m ? ' · ' + fmt(m) : ''}</small></section>`;
+      const k = W.filter(l => l.domainId === d.id).length;
+      return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><b>${k}${d.goal ? ' / ' + d.goal : ''}</b></div>
+        ${d.goal ? `<div class="bar"><i style="width:${Math.min(100, k / d.goal * 100)}%"></i></div>` : ''}
+        ${d.goal && k >= d.goal ? '<small>Objectif atteint 🎉</small>' : ''}</section>`;
     }).join('');
-    return `<div class="card hero"><b>${W.length}</b><p>activité${W.length > 1 ? 's' : ''} depuis le lundi ${fr(ws, { day: 'numeric', month: 'long' })}${min ? ' · ' + fmt(min) : ''}</p></div>${rows}`;
-  },
-  hist() {
-    // Graphique : 12 dernières semaines, barres empilées par domaine
+    // Graphique : 12 dernières semaines, barres empilées par catégorie
     const s0 = wk(Date.now()), Wk = [];
     for (let i = 11; i >= 0; i--) { const a = new Date(s0); a.setDate(a.getDate() - 7 * i); const b = new Date(a); b.setDate(b.getDate() + 7); Wk.push({ a, L: S.logs.filter(l => l.ts >= a && l.ts < b) }); }
     const mx = Math.max(4, ...Wk.map(w => w.L.length));
     const bars = Wk.map((w, i) => {
       let y = 120;
-      const seg = S.domains.map(d => { const n = w.L.filter(l => l.domainId === d.id).length; if (!n) return ''; const h = n / mx * 110; y -= h; return `<rect x="${i * 28 + 4}" y="${y}" width="22" height="${h}" rx="3" fill="${d.color}"/>`; }).join('');
+      const seg = S.domains.map(d => { const k = w.L.filter(l => l.domainId === d.id).length; if (!k) return ''; const h = k / mx * 110; y -= h; return `<rect x="${i * 28 + 4}" y="${y}" width="22" height="${h}" rx="3" fill="${d.color}"/>`; }).join('');
       return seg + `<text x="${i * 28 + 15}" y="135" font-size="9" text-anchor="middle" fill="currentColor" opacity=".6">${w.a.getDate()}/${w.a.getMonth() + 1}</text>`;
     }).join('');
-    // Liste par jour
+    // Historique par jour
     const byDay = {}; S.logs.forEach(l => (byDay[dk(l.ts)] ||= []).push(l));
-    const list = Object.keys(byDay).sort().reverse().map(k => `<div class="day">${fr(k + 'T12:00', { weekday: 'long', day: 'numeric', month: 'long' })} <small>· ${byDay[k].length}</small></div><div class="card">${byDay[k].map(l => logRow(l, false)).join('')}</div>`).join('');
-    return `<div class="card"><h2>Activités par semaine</h2><svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Activités par semaine">${bars}</svg>
-      <div class="chips">${S.domains.map(d => `<small>${d.emoji} ${esc(d.name)}</small>`).join(' ')}</div></div>${list || '<p class="mu">Ton historique se remplira au fil des jours.</p>'}`;
+    const list = Object.keys(byDay).sort().reverse().map(k => `<div class="day">${fr(k + 'T12:00', { weekday: 'long', day: 'numeric', month: 'long' })} <small>· ${byDay[k].length}</small></div><div class="card">${byDay[k].map(logRow).join('')}</div>`).join('');
+    return `<div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div></div>
+      <p class="hello">${msg}</p>${rows}
+      <div class="card"><h2>Évolution semaine après semaine</h2><svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Activités par semaine">${bars}</svg>
+      <div class="chips">${S.domains.map(d => `<small>${d.emoji} ${esc(d.name)}</small>`).join(' ')}</div></div>
+      <h2 style="margin-top:18px">Historique</h2>${list || '<p class="mu">Ton historique se remplira au fil des jours.</p>'}`;
   }
 };
 
 function render() {
   const el = $('#app'), y = scrollY;
   if (!S.user) {
-    el.innerHTML = `<div class="login"><h1>To-do list</h1><p>Note ce que tu fais, regarde tout ce que tu accomplis.</p>
+    el.innerHTML = `<div class="login"><h1>To-do list</h1><p>Coche tes tâches, regarde tout ce que tu accomplis.</p>
       <button class="big" data-act="login">Continuer avec Google</button>
       ${CFG.apiKey.startsWith('COLLE') ? '<p class="mu">Configuration Firebase manquante : voir le guide (README).</p>' : ''}</div>`;
     return;
   }
   const n = streak();
   const st = n > 1 ? `🌱 ${n} jours d’affilée` : n === 1 ? '🌱 Nouvelle série' : '🌱 Nouvelle série à lancer';
-  const tabs = [['today', '☀️', 'Aujourd’hui'], ['tasks', '✅', 'Tâches'], ['week', '📊', 'Semaine'], ['hist', '📈', 'Historique']];
+  const tabs = [['tasks', '✅', 'Tâches'], ['stats', '📊', 'Statistiques']];
   el.innerHTML = `<header><h1>To-do list</h1><span class="st">${st}</span><button class="ib" data-act="settings" aria-label="Réglages">⚙️</button></header>
     <main>${V[S.view]()}</main>
-    <button class="fab" data-act="quick" aria-label="Ajouter une activité">＋</button>
+    ${S.view === 'tasks' && S.domains.length ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
     <nav>${tabs.map(t => `<button class="${S.view === t[0] ? 'on' : ''}" data-act="tab" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
   scrollTo(0, y);
 }
@@ -252,25 +261,9 @@ function sheet(h) {
 }
 const close = () => { ov?.remove(); ov = null; };
 
-// Ajout rapide : domaine mémorisé → souvent 1 seul tap + "Enregistrer"
-function quick() {
-  const note = $('#qn')?.value || '';
-  if (!S.domains.find(d => d.id === Q.d)) Q.d = S.domains[0]?.id;
-  const d = dom(Q.d);
-  sheet(`<h2>Qu’as-tu fait ?</h2>
-    <div class="chips">${S.domains.map(x => `<button class="cp ${x.id === Q.d ? 'on' : ''}" style="--c:${x.color}" data-act="pickd" data-id="${x.id}">${x.emoji} ${esc(x.name)}</button>`).join('')}</div>
-    ${d.subs?.length ? `<div class="chips">${d.subs.map(s => `<button class="cp ${s === Q.s ? 'on' : ''}" style="--c:${d.color}" data-act="picks" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>` : ''}
-    <div class="chips">${[10, 20, 30, 45, 60].map(m => `<button class="cp ${m === Q.m ? 'on' : ''}" data-act="pickm" data-v="${m}">${m} min</button>`).join('')}</div>
-    <input id="qn" placeholder="Note courte (facultatif)" maxlength="120" value="${esc(note)}">
-    <button class="big" data-act="saveLog">Enregistrer</button>`);
-}
-
 function settings() {
   sheet(`<h2>Réglages</h2>
-    <h2 style="font-size:16px">Domaines</h2>
-    ${S.domains.map(d => `<div class="row" style="min-height:48px"><span>${d.emoji} ${esc(d.name)}</span><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier">✎</button></div>`).join('')}
-    <button class="cp" data-act="domform" data-id="">＋ Nouveau domaine</button>
-    <div class="chips" style="margin-top:14px"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
+    <div class="chips"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
     <small>Compte : ${esc(S.user.email)}<br>Identifiant (UID) : ${esc(S.uid)}</small>`);
 }
 
@@ -278,57 +271,64 @@ const A = {
   login() { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => toast('Connexion impossible : ' + e.code)); },
   logout() { close(); signOut(auth); },
   tab({ v }) { S.view = v; render(); scrollTo(0, 0); },
-  quick, settings, close,
+  settings, close,
   theme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('theme', t); },
-  pickd({ id }) { Q.d = id; Q.s = ''; quick(); },
-  picks({ v }) { Q.s = Q.s === v ? '' : v; quick(); },
-  pickm({ v }) { Q.m = Q.m === +v ? 0 : +v; quick(); },
-  saveLog() { addLog({ domainId: Q.d, sub: Q.s, minutes: Q.m, note: $('#qn').value.trim() }); Q.s = ''; Q.m = 0; close(); },
-  dellog({ id }) {
-    const l = S.logs.find(x => x.id === id); deleteDoc(doc(col('logs'), id));
-    const t = l?.taskId && S.tasks.find(x => x.id === l.taskId);
-    if (t && !t.perWeek) updateDoc(taskRef(t.id), { done: false, logId: null });
-  },
-  // Cocher une tâche : crée automatiquement une activité dans le journal
-  tick({ id }) {
-    const t = S.tasks.find(x => x.id === id);
-    if (t.perWeek > 0) { addLog({ domainId: t.domainId, sub: t.sub || '', minutes: 0, note: t.text, taskId: id }); return; }
-    if (t.done) { if (t.logId) deleteDoc(doc(col('logs'), t.logId)); updateDoc(taskRef(id), { done: false, logId: null }); }
-    else { const r = addLog({ domainId: t.domainId, sub: t.sub || '', minutes: 0, note: t.text, taskId: id }); updateDoc(taskRef(id), { done: true, doneAt: Date.now(), logId: r.id }); }
-  },
-  taskform({ id, d }) {
-    const t = id ? S.tasks.find(x => x.id === id) : { domainId: d, perWeek: 0, text: '', sub: '' };
-    const subs = [...new Set(S.domains.flatMap(x => x.subs || []))];
+  tick({ id }) { toggle(id); },
+
+  // --- Tâches ---
+  taskform({ id }) {
+    const t = id ? S.tasks.find(x => x.id === id) : { domainId: S.last, repeat: 'none', text: '' };
+    const sel = S.domains.some(d => d.id === t.domainId) ? t.domainId : S.domains[0].id;
     sheet(`<h2>${id ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
-      <input id="tt" placeholder="Ex. Courir 30 minutes" value="${esc(t.text)}">
-      <select id="td">${S.domains.map(x => `<option value="${x.id}" ${x.id === t.domainId ? 'selected' : ''}>${x.emoji} ${esc(x.name)}</option>`).join('')}</select>
-      <input id="ts" list="sl" placeholder="Sous-catégorie (facultatif)" value="${esc(t.sub)}"><datalist id="sl">${subs.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
-      <select id="tp">${[0, 1, 2, 3, 4, 5, 6, 7].map(n => `<option value="${n}" ${n === +t.perWeek ? 'selected' : ''}>${n ? n + ' fois par semaine' : 'Ponctuelle'}</option>`).join('')}</select>
+      <input id="tt" placeholder="Ex. Courir 30 minutes" maxlength="120" value="${esc(t.text)}">
+      <select id="td" aria-label="Catégorie">${S.domains.map(x => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${x.emoji} ${esc(x.name)}</option>`).join('')}</select>
+      <select id="tp" aria-label="Répétition">${[['none', 'Ponctuelle'], ['daily', 'Tous les jours'], ['weekly', 'Toutes les semaines']].map(([v, l]) => `<option value="${v}" ${v === repeatOf(t) ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      ${id ? '' : '<label class="chk"><input type="checkbox" id="tf"> Déjà fait</label>'}
       <button class="big" data-act="saveTask" data-id="${id || ''}">Enregistrer</button>
       ${id ? `<button class="ghost" data-act="delTask" data-id="${id}">Supprimer la tâche</button>` : ''}`);
+    setTimeout(() => $('#tt')?.focus(), 50);
   },
   saveTask({ id }) {
-    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, sub: $('#ts').value.trim(), perWeek: +$('#tp').value };
+    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, repeat: $('#tp').value, perWeek: 0 };
     if (!o.text) return;
-    if (id) updateDoc(taskRef(id), o); else setDoc(doc(col('tasks')), { ...o, done: false, createdAt: Date.now() });
+    S.last = o.domainId;
+    if (id) updateDoc(taskRef(id), o).catch(err);
+    else {
+      const r = taskRef(doc(col('tasks')).id);
+      setDoc(r, { ...o, done: false, createdAt: Date.now() }).catch(err);
+      if ($('#tf').checked) {            // « Déjà fait » : on la crée directement cochée
+        S.tasks = [...S.tasks, { id: r.id, ...o, done: false, createdAt: Date.now() }];
+        toggle(r.id);
+      }
+    }
     close();
   },
-  delTask({ id }) { if (confirm('Supprimer cette tâche ?')) { deleteDoc(taskRef(id)); close(); } },
+  delTask({ id }) { if (confirm('Supprimer cette tâche ? (l’historique est conservé)')) { deleteDoc(taskRef(id)).catch(err); close(); } },
+
+  // --- Catégories ---
   domform({ id }) {
-    const d = S.domains.find(x => x.id === id) || { name: '', emoji: '⭐', color: '#6366F1', goal: 3, subs: [] };
-    sheet(`<h2>${id ? 'Modifier le domaine' : 'Nouveau domaine'}</h2>
-      <div class="row" style="margin-bottom:12px"><input id="de" style="width:70px;text-align:center" value="${esc(d.emoji)}" maxlength="4" aria-label="Emoji"><input id="dn" placeholder="Nom" value="${esc(d.name)}"><input id="dc" type="color" value="${d.color}" aria-label="Couleur"></div>
-      <label>Objectif par semaine (nombre d’activités)</label><input id="dg" type="number" min="0" value="${d.goal}">
-      <label>Sous-catégories (séparées par des virgules)</label><input id="ds" value="${esc((d.subs || []).join(', '))}">
+    const d = S.domains.find(x => x.id === id) || { name: '', emoji: '⭐', color: COLORS[S.domains.length % COLORS.length], goal: 0 };
+    sheet(`<h2>${id ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</h2>
+      <div class="row" style="margin-bottom:12px"><input id="de" style="width:70px;text-align:center" value="${esc(d.emoji)}" maxlength="4" aria-label="Emoji"><input id="dn" placeholder="Nom" maxlength="40" value="${esc(d.name)}"></div>
+      <input id="dc" type="hidden" value="${d.color}">
+      <div class="chips" id="sws">${[...new Set([d.color, ...COLORS])].map(c => `<button class="sw ${c === d.color ? 'on' : ''}" style="--c:${c}" data-act="pickc" data-v="${c}" aria-label="Couleur"></button>`).join('')}</div>
+      <label>Objectif par semaine (nombre de tâches faites, 0 = aucun)</label><input id="dg" type="number" inputmode="numeric" min="0" value="${d.goal || 0}">
       <button class="big" data-act="saveDom" data-id="${id || ''}">Enregistrer</button>
-      ${id ? `<button class="ghost" data-act="delDom" data-id="${id}">Supprimer le domaine</button>` : ''}`);
+      ${id ? `<button class="ghost" data-act="delDom" data-id="${id}">Supprimer la catégorie</button>` : ''}`);
+    if (!id) setTimeout(() => $('#dn')?.focus(), 50);
   },
+  pickc({ v }) { $('#dc').value = v; document.querySelectorAll('#sws .sw').forEach(b => b.classList.toggle('on', b.dataset.v === v)); },
   saveDom({ id }) {
-    const o = { id: id || 'd' + Date.now().toString(36), name: $('#dn').value.trim(), emoji: $('#de').value.trim() || '⭐', color: $('#dc').value, goal: +$('#dg').value || 0, subs: $('#ds').value.split(',').map(s => s.trim()).filter(Boolean) };
+    const o = { id: id || 'd' + Date.now().toString(36), name: $('#dn').value.trim(), emoji: $('#de').value.trim() || '⭐', color: $('#dc').value, goal: +$('#dg').value || 0 };
     if (!o.name) return;
-    setDoc(cfgRef(), { domains: id ? S.domains.map(x => x.id === id ? o : x) : [...S.domains, o] }); close();
+    saveDomains(id ? S.domains.map(x => x.id === id ? o : x) : [...S.domains, o]); close();
   },
-  delDom({ id }) { if (confirm('Supprimer ce domaine ? Les activités déjà enregistrées sont conservées.')) { setDoc(cfgRef(), { domains: S.domains.filter(x => x.id !== id) }); close(); } },
+  delDom({ id }) {
+    if (!confirm('Supprimer cette catégorie et ses tâches ? Les activités déjà enregistrées restent dans les statistiques.')) return;
+    S.tasks.filter(t => t.domainId === id).forEach(t => deleteDoc(taskRef(t.id)).catch(err));
+    saveDomains(S.domains.filter(x => x.id !== id)); close();
+  },
+
   // Sauvegarde : tout l'historique (pas seulement les 120 derniers jours)
   async export() {
     const [l, t] = await Promise.all([getDocs(col('logs')), getDocs(col('tasks'))]);
@@ -340,6 +340,8 @@ const A = {
 };
 // Un seul écouteur de clics pour toute l'appli (attributs data-act)
 document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act]?.(b.dataset); });
+// Touche Entrée = Enregistrer dans les formulaires
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click(); });
 
 /* ============================================================
    6) CONNEXION ET SYNCHRONISATION TEMPS RÉEL
@@ -350,7 +352,7 @@ onAuthStateChanged(auth, u => {
   if (u) {
     const since = Date.now() - 120 * 864e5; // on synchronise les 120 derniers jours
     unsubs = [
-      onSnapshot(cfgRef(), s => { if (s.exists()) S.domains = s.data().domains || []; else setDoc(cfgRef(), { domains: DEFAULTS }); render(); }, err),
+      onSnapshot(cfgRef(), s => { S.domains = s.exists() ? (s.data().domains || []) : []; render(); }, err),
       onSnapshot(query(col('logs'), where('ts', '>=', since)), s => { S.logs = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.ts - a.ts); render(); }, err),
       onSnapshot(col('tasks'), s => { S.tasks = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, err)
     ];
