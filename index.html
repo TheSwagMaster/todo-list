@@ -117,6 +117,10 @@ textarea{width:100%;padding:10px 12px;margin:0 0 12px;border-radius:12px;border:
 .task{height:60px}
 .task .tx{display:flex;flex-direction:column;overflow:hidden}
 .ln{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.add{display:flex;align-items:center;min-height:52px;border-top:1px solid var(--ln)}
+.add input{border:0;background:transparent;margin:0;min-height:44px;padding:0 4px}
+.add input::placeholder{color:var(--mu)}
+.add input:focus-visible{outline:0}
 </style>
 </head>
 <body>
@@ -241,7 +245,7 @@ const V = {
       }).join('');
       return `<section class="card ${fold ? 'fold' : ''}" data-sort="${d.id}" style="--c:${d.color}">
         <div class="row hd" data-act="fold" data-id="${d.id}"><h2><span class="chev">${fold ? '▸' : '▾'}</span> ${d.emoji} ${esc(d.name)} ${T.length ? `<small>${nd}/${T.length}</small>` : ''}</h2><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button></div>
-        <div class="tl">${rows || '<small>Aucune tâche pour l’instant.</small>'}</div></section>`;
+        <div class="tl">${rows}<div class="add"><input data-add="${d.id}" placeholder="＋ Ajouter une tâche" maxlength="120" enterkeyhint="done" aria-label="Ajouter une tâche dans ${esc(d.name)}"></div></div></section>`;
     }).join('');
     return hello + `<div id="doms">${cards}</div><button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`;
   },
@@ -252,7 +256,7 @@ const V = {
     const parts = S.domains.map(d => [d, L.filter(l => l.domainId === d.id).length]).filter(p => p[1]).map(([d, k]) => `${k} en ${esc(d.name.toLowerCase())}`);
     const msg = parts.length ? `Aujourd’hui : ${parts.join(', ')}` : 'Une page blanche, prête à accueillir ta journée.';
     // Cette semaine, par catégorie, avec barre d'objectif si défini
-    const rows = S.domains.map(d => {
+    const rows = S.domains.filter(d => d.goal > 0).map(d => {
       const k = W.filter(l => l.domainId === d.id).length;
       return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><b>${k}${d.goal ? ' / ' + d.goal : ''}</b></div>
         ${d.goal ? `<div class="bar"><i style="width:${Math.min(100, k / d.goal * 100)}%"></i></div>` : ''}
@@ -285,8 +289,8 @@ const V = {
     // Historique par jour
     const byDay = {}; S.logs.forEach(l => (byDay[dk(l.ts)] ||= []).push(l));
     const list = Object.keys(byDay).sort().reverse().map(k => `<div class="day">${fr(k + 'T12:00', { weekday: 'long', day: 'numeric', month: 'long' })} <small>· ${byDay[k].length}</small></div><div class="card">${byDay[k].map(logRow).join('')}</div>`).join('');
-    return `<div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div><div><b>${Mo.length}</b><small>ce mois</small></div></div>
-      <p class="hello">${msg}</p><h2 style="margin:6px 0 8px">🎯 Objectifs de la semaine</h2>${rows}
+    return `<h2 style="margin:0 0 8px">Tâches complétées</h2><div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div><div><b>${Mo.length}</b><small>ce mois</small></div></div>
+      <p class="hello">${msg}</p><h2 style="margin:6px 0 8px">🎯 Objectifs de la semaine</h2>${rows || '<p class="mu" style="margin:0 0 12px">Aucun objectif défini : ajoute-en un depuis une catégorie (✎) pour suivre ta semaine.</p>'}
       <div class="card"><div class="row" style="margin-bottom:8px"><h2 style="margin:0">Tâches faites</h2><div class="chips" style="margin:0"><button class="cp sm ${M ? '' : 'on'}" data-act="range" data-v="week">Semaines</button><button class="cp sm ${M ? 'on' : ''}" data-act="range" data-v="month">Mois</button></div></div>
       <svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Tâches faites par ${M ? 'mois' : 'semaine'}">${bars}</svg></div>${pie}
       <h2 style="margin-top:18px">Historique</h2>${list || '<p class="mu">Ton historique se remplira au fil des jours.</p>'}`;
@@ -296,6 +300,7 @@ const V = {
 function render() {
   if (drag) return;                      // pas de redessin pendant un glisser-déposer
   const el = $('#app'), y = scrollY;
+  const keep = [...el.querySelectorAll('[data-add]')].map(i => ({ id: i.dataset.add, v: i.value, f: i === document.activeElement }));
   if (!S.user) {
     el.innerHTML = `<div class="login"><h1>To-do list</h1><p>Coche tes tâches, regarde tout ce que tu accomplis.</p>
       <button class="big" data-act="login">Continuer avec Google</button>
@@ -309,6 +314,7 @@ function render() {
     <main>${V[S.view]()}</main>
     ${S.view === 'tasks' && S.domains.length ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
     <nav>${tabs.map(t => `<button class="${S.view === t[0] ? 'on' : ''}" data-act="tab" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
+  keep.forEach(k => { const i = el.querySelector(`[data-add="${CSS.escape(k.id)}"]`); if (i) { i.value = k.v; if (k.f) i.focus({ preventScroll: true }); } });
   scrollTo(0, y);
 }
 
@@ -476,7 +482,16 @@ document.addEventListener('contextmenu', e => { if (hold || drag) e.preventDefau
 document.addEventListener('click', e => { if (Date.now() < noClick) { e.stopPropagation(); e.preventDefault(); } }, true);  // pas de « clic » à la fin d'un glisser
 
 // Touche Entrée = Enregistrer dans les formulaires
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click();
+  const id = e.target.dataset?.add;     // ligne « ＋ Ajouter une tâche » d'une catégorie : Entrée = créer
+  if (id !== undefined) {
+    const text = e.target.value.trim(); if (!text) return;
+    S.last = id; e.target.value = '';
+    setDoc(doc(col('tasks')), { text, domainId: id, repeat: 'none', perWeek: 0, note: '', done: false, createdAt: Date.now() }).catch(err);
+  }
+});
 
 /* ============================================================
    6) CONNEXION ET SYNCHRONISATION TEMPS RÉEL
