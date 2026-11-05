@@ -77,6 +77,35 @@ label{display:block;font-size:14px;color:var(--mu)}
 @keyframes pop{0%{transform:translateX(-50%) scale(.6);opacity:0}60%{transform:translateX(-50%) scale(1.08)}}
 @keyframes tick{0%{transform:scale(.7)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ===== Style « verre » + nouveautés ===== */
+:root{--gl:rgba(255,255,255,.58);--gls:rgba(255,255,255,.88);--gb:rgba(255,255,255,.8);--hi:rgba(255,255,255,.75);--sd:rgba(30,60,50,.10);--bo:1}
+[data-theme=dark]{--gl:rgba(32,44,40,.55);--gls:rgba(24,33,30,.9);--gb:rgba(255,255,255,.11);--hi:rgba(255,255,255,.09);--sd:rgba(0,0,0,.35);--bo:.55}
+body::before{content:"";position:fixed;inset:0;z-index:-1;opacity:var(--bo);background:radial-gradient(60% 38% at 12% 0%,color-mix(in srgb,var(--ac) 38%,transparent),transparent),radial-gradient(50% 36% at 100% 38%,rgba(139,92,246,.26),transparent),radial-gradient(60% 40% at 0% 100%,rgba(249,115,22,.22),transparent)}
+header,nav,.card,.st,.cp{-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%)}
+header{background:var(--gl);border-bottom:1px solid var(--gb)}
+nav{background:var(--gl);border-top:1px solid var(--gb)}
+.card{background:var(--gl);border:1px solid var(--gb);box-shadow:0 8px 28px var(--sd),inset 0 1px 0 var(--hi)}
+.st{background:var(--gl);border-color:var(--gb)}
+.cp{background:var(--gl)}
+.cp.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.cp.sm{min-height:38px;padding:0 14px}
+.row .cp{flex:none}
+.sh{background:var(--gls);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--gb);border-bottom:0}
+.ov{background:rgba(0,0,0,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.fab{background:linear-gradient(145deg,color-mix(in srgb,var(--ac) 72%,#fff),var(--ac));border:1px solid rgba(255,255,255,.45);box-shadow:0 10px 26px rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.45)}
+nav button span{width:60px;margin:0 auto 2px;padding:3px 0;border-radius:99px;transition:background .2s}
+nav button.on span{background:color-mix(in srgb,var(--ac) 22%,transparent)}
+.task,.task:first-of-type{border-top:1px solid var(--ln)}
+.hero b{font-size:46px}
+textarea{width:100%;padding:10px 12px;margin:0 0 12px;border-radius:12px;border:2px solid var(--ln);background:var(--bg);font:inherit;color:inherit;resize:vertical}
+.nt{white-space:pre-wrap;display:inline-block}
+.grip{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:26px;color:var(--mu);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+[data-sort]{transition:transform .15s}
+.lift{transition:none!important;position:relative;z-index:3;box-shadow:0 14px 34px rgba(0,0,0,.3)!important}
+.task.lift{background:var(--sf);border-radius:12px}
+.cu{position:relative;background:conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#6366f1,#d946ef,#ef4444)}
+.cu.on{background:radial-gradient(circle,var(--c) 0 42%,transparent 44%),conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#6366f1,#d946ef,#ef4444)}
+.cu input{position:absolute;inset:0;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -112,9 +141,9 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
    users/{uid}/tasks/{id}   → tâches
    users/{uid}/logs/{id}    → une ligne d'historique créée à chaque case cochée
    ============================================================ */
-const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '' };
-let unsubs = [], ov = null;
-const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308', '#14B8A6', '#64748B'];
+const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '', reorder: false, range: 'week' };
+let unsubs = [], ov = null, drag = null;
+const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308', '#14B8A6', '#64748B', '#EF4444', '#6366F1', '#84CC16', '#78350F'];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -127,6 +156,19 @@ const col = n => collection(db, 'users', S.uid, n);
 const cfgRef = () => doc(db, 'users', S.uid, 'meta', 'config');
 const taskRef = id => doc(col('tasks'), id);
 const weekStart = () => wk(Date.now()).getTime();
+const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); };
+const ord = t => t.order ?? t.createdAt ?? 0;   // ordre manuel des tâches (sinon : par date de création)
+const hapOn = () => localStorage.getItem('haptic') !== 'off';
+// Retour haptique : vibration sur Android ; sur iPhone (Safari 17.4+), astuce de l'interrupteur HTML. Sans effet si non supporté.
+function haptic() {
+  if (!hapOn()) return;
+  try {
+    if (navigator.vibrate) { navigator.vibrate(12); return; }
+    const l = document.createElement('label');
+    l.setAttribute('aria-hidden', 'true'); l.style.cssText = 'position:fixed;left:-99px;top:0;opacity:0';
+    l.innerHTML = '<input type="checkbox" switch>'; document.body.append(l); l.click(); setTimeout(() => l.remove(), 100);
+  } catch (e) {}
+}
 const saveDomains = list => setDoc(cfgRef(), { domains: list }).catch(err);
 
 function toast(t) {
@@ -146,7 +188,7 @@ function streak() {
 
 /* ============================================================
    3) TÂCHES : une case = fait / pas fait (on peut décocher)
-   t.repeat : 'none' (ponctuelle) | 'daily' (tous les jours) | 'weekly' (toutes les semaines)
+   t.repeat : 'none' (ponctuelle) | 'daily' (tous les jours) | 'weekly' (toutes les semaines) | 'monthly' (tous les mois)
    Une tâche récurrente se « décoche » toute seule quand le jour / la semaine change.
    ============================================================ */
 const repeatOf = t => t.repeat || (t.perWeek > 0 ? 'weekly' : 'none'); // compatible avec l'ancienne version
@@ -155,6 +197,7 @@ function isDone(t) {
   const r = repeatOf(t);
   if (r === 'daily') return dk(t.doneAt) === dk(Date.now());
   if (r === 'weekly') return t.doneAt >= weekStart();
+  if (r === 'monthly') return t.doneAt >= monthStart();
   return true;
 }
 // Une tâche ponctuelle déjà faite disparaît le lendemain (elle reste dans les statistiques)
@@ -184,26 +227,28 @@ const logRow = l => `<div class="lg"><span class="mu">${new Date(l.ts).toLocaleT
 const V = {
   tasks() {
     if (!S.domains.length) return `<div class="empty"><p>Crée ta première catégorie (Sport, Lecture, Travail…) pour y ranger tes tâches.</p><button class="big" data-act="domform" data-id="">＋ Créer une catégorie</button></div>`;
-    const n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length;
-    const hello = `<p class="hello">${n ? `✨ ${n} chose${n > 1 ? 's' : ''} faite${n > 1 ? 's' : ''} aujourd’hui` : 'Prêt pour la journée 🌿'}</p>`;
+    const R = S.reorder, n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length;
+    const hello = R ? 'Maintiens ≡ et fais glisser' : n ? `✨ ${n} chose${n > 1 ? 's' : ''} faite${n > 1 ? 's' : ''} aujourd’hui` : 'Prêt pour la journée 🌿';
+    const top = `<div class="row" style="margin-bottom:12px"><p class="hello" style="margin:0">${hello}</p><button class="cp" data-act="reorder">${R ? '✓ Terminé' : '↕ Réorganiser'}</button></div>`;
     const cards = S.domains.map(d => {
       const T = S.tasks.filter(t => t.domainId === d.id && visible(t))
-        .sort((a, b) => isDone(a) - isDone(b) || a.createdAt - b.createdAt);
+        .sort((a, b) => (R ? 0 : isDone(a) - isDone(b)) || ord(a) - ord(b));
       const rows = T.map(t => {
-        const ok = isDone(t), r = repeatOf(t);
-        const sub = r === 'daily' ? 'Tous les jours' : r === 'weekly' ? 'Chaque semaine' : '';
+        if (R) return `<div class="task" data-sort="${t.id}" style="--c:${d.color}"><span class="tx">${esc(t.text)}</span><span class="grip" aria-label="Déplacer">≡</span></div>`;
+        const ok = isDone(t), sub = { daily: 'Tous les jours', weekly: 'Chaque semaine', monthly: 'Chaque mois' }[repeatOf(t)];
         return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" style="--c:${d.color}">
           <button class="tk" role="checkbox" aria-checked="${ok}" data-act="tick" data-id="${t.id}"><span class="box">${ok ? '✓' : ''}</span>
-            <span class="tx">${esc(t.text)}${sub ? `<br><small>🔁 ${sub}</small>` : ''}</span></button>
+            <span class="tx">${esc(t.text)}${sub ? `<br><small>🔁 ${sub}</small>` : ''}${t.note ? `<br><small class="nt">${esc(t.note)}</small>` : ''}</span></button>
           <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button></div>`;
       }).join('');
-      return `<section class="card" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button></div>${rows || '<small>Aucune tâche pour l’instant.</small>'}</section>`;
+      const head = R ? '<span class="grip" aria-label="Déplacer la catégorie">≡</span>' : `<button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button>`;
+      return `<section class="card" data-sort="${d.id}" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2>${head}</div><div class="tl">${rows || '<small>Aucune tâche pour l’instant.</small>'}</div></section>`;
     }).join('');
-    return hello + cards + `<button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`;
+    return top + `<div id="doms">${cards}</div>` + (R ? '' : `<button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`);
   },
   stats() {
-    const t0 = dk(Date.now()), ws = weekStart();
-    const L = S.logs.filter(l => dk(l.ts) === t0), W = S.logs.filter(l => l.ts >= ws);
+    const t0 = dk(Date.now()), ws = weekStart(), M = S.range === 'month';
+    const L = S.logs.filter(l => dk(l.ts) === t0), W = S.logs.filter(l => l.ts >= ws), Mo = S.logs.filter(l => l.ts >= monthStart());
     // Message positif du jour
     const parts = S.domains.map(d => [d, L.filter(l => l.domainId === d.id).length]).filter(p => p[1]).map(([d, k]) => `${k} en ${esc(d.name.toLowerCase())}`);
     const msg = parts.length ? `Aujourd’hui : ${parts.join(', ')}` : 'Une page blanche, prête à accueillir ta journée.';
@@ -214,27 +259,34 @@ const V = {
         ${d.goal ? `<div class="bar"><i style="width:${Math.min(100, k / d.goal * 100)}%"></i></div>` : ''}
         ${d.goal && k >= d.goal ? '<small>Objectif atteint 🎉</small>' : ''}</section>`;
     }).join('');
-    // Graphique : 12 dernières semaines, barres empilées par catégorie
-    const s0 = wk(Date.now()), Wk = [];
-    for (let i = 11; i >= 0; i--) { const a = new Date(s0); a.setDate(a.getDate() - 7 * i); const b = new Date(a); b.setDate(b.getDate() + 7); Wk.push({ a, L: S.logs.filter(l => l.ts >= a && l.ts < b) }); }
-    const mx = Math.max(4, ...Wk.map(w => w.L.length));
-    const bars = Wk.map((w, i) => {
-      let y = 120;
-      const seg = S.domains.map(d => { const k = w.L.filter(l => l.domainId === d.id).length; if (!k) return ''; const h = k / mx * 110; y -= h; return `<rect x="${i * 28 + 4}" y="${y}" width="22" height="${h}" rx="3" fill="${d.color}"/>`; }).join('');
-      return seg + `<text x="${i * 28 + 15}" y="135" font-size="9" text-anchor="middle" fill="currentColor" opacity=".6">${w.a.getDate()}/${w.a.getMonth() + 1}</text>`;
+    // Graphique simple : nombre de tâches faites, 12 dernières semaines ou 12 derniers mois
+    const now = new Date(), P = [];
+    for (let i = 11; i >= 0; i--) {
+      let a, b;
+      if (M) { a = new Date(now.getFullYear(), now.getMonth() - i, 1); b = new Date(now.getFullYear(), now.getMonth() - i + 1, 1); }
+      else { a = new Date(wk(now)); a.setDate(a.getDate() - 7 * i); b = new Date(a); b.setDate(b.getDate() + 7); }
+      P.push({ a, n: S.logs.filter(l => l.ts >= a && l.ts < b).length });
+    }
+    const mx = Math.max(4, ...P.map(w => w.n));
+    const bars = P.map((w, i) => {
+      const h = w.n / mx * 100, x = i * 28 + 4, lab = M ? w.a.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') : w.a.getDate() + '/' + (w.a.getMonth() + 1);
+      return `<rect x="${x}" y="${116 - h}" width="22" height="${w.n ? Math.max(h, 2) : 0}" rx="4" style="fill:var(--ac);opacity:${i === 11 ? 1 : .55}"/>`
+        + (w.n ? `<text x="${x + 11}" y="${112 - h}" font-size="10" font-weight="600" text-anchor="middle" fill="currentColor">${w.n}</text>` : '')
+        + `<text x="${x + 11}" y="132" font-size="9" text-anchor="middle" fill="currentColor" opacity=".6">${lab}</text>`;
     }).join('');
     // Historique par jour
     const byDay = {}; S.logs.forEach(l => (byDay[dk(l.ts)] ||= []).push(l));
     const list = Object.keys(byDay).sort().reverse().map(k => `<div class="day">${fr(k + 'T12:00', { weekday: 'long', day: 'numeric', month: 'long' })} <small>· ${byDay[k].length}</small></div><div class="card">${byDay[k].map(logRow).join('')}</div>`).join('');
-    return `<div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div></div>
+    return `<div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div><div><b>${Mo.length}</b><small>ce mois</small></div></div>
       <p class="hello">${msg}</p>${rows}
-      <div class="card"><h2>Évolution semaine après semaine</h2><svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Activités par semaine">${bars}</svg>
-      <div class="chips">${S.domains.map(d => `<small>${d.emoji} ${esc(d.name)}</small>`).join(' ')}</div></div>
+      <div class="card"><div class="row" style="margin-bottom:8px"><h2 style="margin:0">Tâches faites</h2><div class="chips" style="margin:0"><button class="cp sm ${M ? '' : 'on'}" data-act="range" data-v="week">Semaines</button><button class="cp sm ${M ? 'on' : ''}" data-act="range" data-v="month">Mois</button></div></div>
+      <svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Tâches faites par ${M ? 'mois' : 'semaine'}">${bars}</svg></div>
       <h2 style="margin-top:18px">Historique</h2>${list || '<p class="mu">Ton historique se remplira au fil des jours.</p>'}`;
   }
 };
 
 function render() {
+  if (drag) return;                      // pas de redessin pendant un glisser-déposer
   const el = $('#app'), y = scrollY;
   if (!S.user) {
     el.innerHTML = `<div class="login"><h1>To-do list</h1><p>Coche tes tâches, regarde tout ce que tu accomplis.</p>
@@ -247,7 +299,7 @@ function render() {
   const tabs = [['tasks', '✅', 'Tâches'], ['stats', '📊', 'Statistiques']];
   el.innerHTML = `<header><h1>To-do list</h1><span class="st">${st}</span><button class="ib" data-act="settings" aria-label="Réglages">⚙️</button></header>
     <main>${V[S.view]()}</main>
-    ${S.view === 'tasks' && S.domains.length ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
+    ${S.view === 'tasks' && S.domains.length && !S.reorder ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
     <nav>${tabs.map(t => `<button class="${S.view === t[0] ? 'on' : ''}" data-act="tab" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
   scrollTo(0, y);
 }
@@ -263,17 +315,20 @@ const close = () => { ov?.remove(); ov = null; };
 
 function settings() {
   sheet(`<h2>Réglages</h2>
-    <div class="chips"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
+    <div class="chips"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="hap">📳 Vibration : ${hapOn() ? 'oui' : 'non'}</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
     <small>Compte : ${esc(S.user.email)}<br>Identifiant (UID) : ${esc(S.uid)}</small>`);
 }
 
 const A = {
   login() { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => toast('Connexion impossible : ' + e.code)); },
   logout() { close(); signOut(auth); },
-  tab({ v }) { S.view = v; render(); scrollTo(0, 0); },
+  tab({ v }) { S.view = v; S.reorder = false; render(); scrollTo(0, 0); },
   settings, close,
   theme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('theme', t); },
-  tick({ id }) { toggle(id); },
+  tick({ id }) { haptic(); toggle(id); },
+  reorder() { S.reorder = !S.reorder; render(); },
+  range({ v }) { S.range = v; render(); },
+  hap() { localStorage.setItem('haptic', hapOn() ? 'off' : 'on'); settings(); },
 
   // --- Tâches ---
   taskform({ id }) {
@@ -282,14 +337,15 @@ const A = {
     sheet(`<h2>${id ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
       <input id="tt" placeholder="Ex. Courir 30 minutes" maxlength="120" value="${esc(t.text)}">
       <select id="td" aria-label="Catégorie">${S.domains.map(x => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${x.emoji} ${esc(x.name)}</option>`).join('')}</select>
-      <select id="tp" aria-label="Répétition">${[['none', 'Ponctuelle'], ['daily', 'Tous les jours'], ['weekly', 'Toutes les semaines']].map(([v, l]) => `<option value="${v}" ${v === repeatOf(t) ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <select id="tp" aria-label="Répétition">${[['none', 'Ponctuelle'], ['daily', 'Tous les jours'], ['weekly', 'Toutes les semaines'], ['monthly', 'Tous les mois']].map(([v, l]) => `<option value="${v}" ${v === repeatOf(t) ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <textarea id="tn" rows="3" maxlength="500" placeholder="Note (facultatif)">${esc(t.note)}</textarea>
       ${id ? '' : '<label class="chk"><input type="checkbox" id="tf"> Déjà fait</label>'}
       <button class="big" data-act="saveTask" data-id="${id || ''}">Enregistrer</button>
       ${id ? `<button class="ghost" data-act="delTask" data-id="${id}">Supprimer la tâche</button>` : ''}`);
     setTimeout(() => $('#tt')?.focus(), 50);
   },
   saveTask({ id }) {
-    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, repeat: $('#tp').value, perWeek: 0 };
+    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, repeat: $('#tp').value, perWeek: 0, note: $('#tn').value.trim() };
     if (!o.text) return;
     S.last = o.domainId;
     if (id) updateDoc(taskRef(id), o).catch(err);
@@ -311,13 +367,17 @@ const A = {
     sheet(`<h2>${id ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</h2>
       <div class="row" style="margin-bottom:12px"><input id="de" style="width:70px;text-align:center" value="${esc(d.emoji)}" maxlength="4" aria-label="Emoji"><input id="dn" placeholder="Nom" maxlength="40" value="${esc(d.name)}"></div>
       <input id="dc" type="hidden" value="${d.color}">
-      <div class="chips" id="sws">${[...new Set([d.color, ...COLORS])].map(c => `<button class="sw ${c === d.color ? 'on' : ''}" style="--c:${c}" data-act="pickc" data-v="${c}" aria-label="Couleur"></button>`).join('')}</div>
+      <div class="chips" id="sws">${[...new Set([d.color, ...COLORS])].map(c => `<button class="sw ${c === d.color ? 'on' : ''}" style="--c:${c}" data-act="pickc" data-v="${c}" aria-label="Couleur"></button>`).join('')}<label class="sw cu" id="cu" aria-label="Couleur personnalisée"><input type="color" id="dcp" value="${d.color}"></label></div>
       <label>Objectif par semaine (nombre de tâches faites, 0 = aucun)</label><input id="dg" type="number" inputmode="numeric" min="0" value="${d.goal || 0}">
       <button class="big" data-act="saveDom" data-id="${id || ''}">Enregistrer</button>
       ${id ? `<button class="ghost" data-act="delDom" data-id="${id}">Supprimer la catégorie</button>` : ''}`);
     if (!id) setTimeout(() => $('#dn')?.focus(), 50);
   },
-  pickc({ v }) { $('#dc').value = v; document.querySelectorAll('#sws .sw').forEach(b => b.classList.toggle('on', b.dataset.v === v)); },
+  pickc({ v }) {
+    $('#dc').value = v;
+    document.querySelectorAll('#sws .sw[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    const cu = $('#cu'); cu.style.setProperty('--c', v); cu.classList.toggle('on', !COLORS.includes(v));   // pastille « couleur libre »
+  },
   saveDom({ id }) {
     const o = { id: id || 'd' + Date.now().toString(36), name: $('#dn').value.trim(), emoji: $('#de').value.trim() || '⭐', color: $('#dc').value, goal: +$('#dg').value || 0 };
     if (!o.name) return;
@@ -340,6 +400,57 @@ const A = {
 };
 // Un seul écouteur de clics pour toute l'appli (attributs data-act)
 document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act]?.(b.dataset); });
+// Sélecteur de couleur libre
+document.addEventListener('input', e => { if (e.target.id === 'dcp') A.pickc({ v: e.target.value }); });
+
+/* ---- Réorganiser par glisser-déposer : on attrape la poignée ≡ ---- */
+function reorder(list, ids) {
+  if (list.id === 'doms') {            // catégories
+    const m = new Map(S.domains.map(d => [d.id, d]));
+    S.domains = ids.map(i => m.get(i)).filter(Boolean); saveDomains(S.domains);
+  } else ids.forEach((id, i) => {      // tâches d'une catégorie : champ « order »
+    const t = S.tasks.find(x => x.id === id);
+    if (t && t.order !== i) { t.order = i; updateDoc(taskRef(id), { order: i }).catch(err); }
+  });
+}
+function place() {                      // l'élément suit le doigt, les autres s'écartent
+  const d = drag, dy = d.y + scrollY - d.start;
+  d.item.style.transform = `translateY(${dy}px)`;
+  const mid = d.mids[d.from] + dy;
+  d.to = d.mids.filter((m, i) => i !== d.from && m < mid).length;
+  d.items.forEach((x, i) => {
+    if (i === d.from) return;
+    x.style.transform = d.from < d.to && i > d.from && i <= d.to ? `translateY(${-d.sh}px)` : d.from > d.to && i < d.from && i >= d.to ? `translateY(${d.sh}px)` : '';
+  });
+}
+function loop() {                       // défilement automatique près des bords de l'écran
+  if (!drag) return;
+  if (drag.y < 120) scrollBy(0, -12); else if (drag.y > innerHeight - 140) scrollBy(0, 12);
+  place(); drag.raf = requestAnimationFrame(loop);
+}
+document.addEventListener('pointerdown', e => {
+  const g = e.target.closest('.grip'); if (!g) return;
+  const item = g.closest('[data-sort]'); if (!item) return;
+  e.preventDefault();
+  const list = item.parentElement, items = [...list.children].filter(x => x.dataset.sort);
+  drag = { item, list, items, from: items.indexOf(item), to: items.indexOf(item), y: e.clientY, start: e.clientY + scrollY,
+    mids: items.map(x => { const r = x.getBoundingClientRect(); return r.top + scrollY + r.height / 2; }),
+    sh: item.offsetHeight + (parseFloat(getComputedStyle(item).marginBottom) || 0) };
+  g.setPointerCapture(e.pointerId); item.classList.add('lift'); loop();
+});
+document.addEventListener('pointermove', e => { if (drag) drag.y = e.clientY; });
+function drop() {
+  if (!drag) return;
+  const d = drag; drag = null; cancelAnimationFrame(d.raf);
+  d.items.forEach(x => { x.style.transform = ''; x.classList.remove('lift'); });
+  if (d.to !== d.from) {
+    const ids = d.items.map(x => x.dataset.sort); ids.splice(d.to, 0, ids.splice(d.from, 1)[0]);
+    reorder(d.list, ids); haptic();
+  }
+  render();
+}
+document.addEventListener('pointerup', drop); document.addEventListener('pointercancel', drop);
+
 // Touche Entrée = Enregistrer dans les formulaires
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click(); });
 
@@ -350,7 +461,7 @@ onAuthStateChanged(auth, u => {
   unsubs.forEach(f => f()); unsubs = []; close();
   S.user = u; S.uid = u?.uid; S.domains = []; S.logs = []; S.tasks = [];
   if (u) {
-    const since = Date.now() - 120 * 864e5; // on synchronise les 120 derniers jours
+    const since = Date.now() - 370 * 864e5; // on synchronise les 12 derniers mois
     unsubs = [
       onSnapshot(cfgRef(), s => { S.domains = s.exists() ? (s.data().domains || []) : []; render(); }, err),
       onSnapshot(query(col('logs'), where('ts', '>=', since)), s => { S.logs = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.ts - a.ts); render(); }, err),
