@@ -92,14 +92,21 @@ nav{background:var(--gl);border-top:1px solid var(--gb)}
 .row .cp{flex:none}
 .sh{background:var(--gls);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--gb);border-bottom:0}
 .ov{background:rgba(0,0,0,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
-.fab{background:linear-gradient(145deg,color-mix(in srgb,var(--ac) 72%,#fff),var(--ac));border:1px solid rgba(255,255,255,.45);box-shadow:0 10px 26px rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.45)}
+.fab{background:var(--ac);border:0;font-size:0;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+.fab::before,.fab::after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:3px;transform:translate(-50%,-50%)}
+.fab::before{width:26px;height:4px}.fab::after{width:4px;height:26px}
 nav button span{width:60px;margin:0 auto 2px;padding:3px 0;border-radius:99px;transition:background .2s}
 nav button.on span{background:color-mix(in srgb,var(--ac) 22%,transparent)}
 .task,.task:first-of-type{border-top:1px solid var(--ln)}
 .hero b{font-size:46px}
 textarea{width:100%;padding:10px 12px;margin:0 0 12px;border-radius:12px;border:2px solid var(--ln);background:var(--bg);font:inherit;color:inherit;resize:vertical}
 .nt{white-space:pre-wrap;display:inline-block}
-.grip{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:26px;color:var(--mu);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.task,.hd{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.hd{min-height:44px;cursor:pointer}
+.chev{display:inline-block;width:1em;color:var(--mu)}
+.fold .tl,#doms.compact .tl{display:none}
+.donut{display:flex;align-items:center;gap:16px}.donut svg{width:140px;height:140px;flex:none}
+.lgd{flex:1;min-width:0;font-size:14px}.lgd div{display:flex;align-items:center;gap:8px;min-height:28px}.lgd i{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
 [data-sort]{transition:transform .15s}
 .lift{transition:none!important;position:relative;z-index:3;box-shadow:0 14px 34px rgba(0,0,0,.3)!important}
 .task.lift{background:var(--sf);border-radius:12px}
@@ -141,7 +148,7 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
    users/{uid}/tasks/{id}   → tâches
    users/{uid}/logs/{id}    → une ligne d'historique créée à chaque case cochée
    ============================================================ */
-const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '', reorder: false, range: 'week' };
+const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '', range: 'week', pie: 'week', fold: new Set(JSON.parse(localStorage.getItem('fold') || '[]')) };
 let unsubs = [], ov = null, drag = null;
 const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308', '#14B8A6', '#64748B', '#EF4444', '#6366F1', '#84CC16', '#78350F'];
 
@@ -158,17 +165,6 @@ const taskRef = id => doc(col('tasks'), id);
 const weekStart = () => wk(Date.now()).getTime();
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); };
 const ord = t => t.order ?? t.createdAt ?? 0;   // ordre manuel des tâches (sinon : par date de création)
-const hapOn = () => localStorage.getItem('haptic') !== 'off';
-// Retour haptique : vibration sur Android ; sur iPhone (Safari 17.4+), astuce de l'interrupteur HTML. Sans effet si non supporté.
-function haptic() {
-  if (!hapOn()) return;
-  try {
-    if (navigator.vibrate) { navigator.vibrate(12); return; }
-    const l = document.createElement('label');
-    l.setAttribute('aria-hidden', 'true'); l.style.cssText = 'position:fixed;left:-99px;top:0;opacity:0';
-    l.innerHTML = '<input type="checkbox" switch>'; document.body.append(l); l.click(); setTimeout(() => l.remove(), 100);
-  } catch (e) {}
-}
 const saveDomains = list => setDoc(cfgRef(), { domains: list }).catch(err);
 
 function toast(t) {
@@ -227,24 +223,23 @@ const logRow = l => `<div class="lg"><span class="mu">${new Date(l.ts).toLocaleT
 const V = {
   tasks() {
     if (!S.domains.length) return `<div class="empty"><p>Crée ta première catégorie (Sport, Lecture, Travail…) pour y ranger tes tâches.</p><button class="big" data-act="domform" data-id="">＋ Créer une catégorie</button></div>`;
-    const R = S.reorder, n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length;
-    const hello = R ? 'Maintiens ≡ et fais glisser' : n ? `✨ ${n} chose${n > 1 ? 's' : ''} faite${n > 1 ? 's' : ''} aujourd’hui` : 'Prêt pour la journée 🌿';
-    const top = `<div class="row" style="margin-bottom:12px"><p class="hello" style="margin:0">${hello}</p><button class="cp" data-act="reorder">${R ? '✓ Terminé' : '↕ Réorganiser'}</button></div>`;
+    const n = S.logs.filter(l => dk(l.ts) === dk(Date.now())).length;
+    const hello = `<p class="hello">${n ? `✨ ${n} chose${n > 1 ? 's' : ''} faite${n > 1 ? 's' : ''} aujourd’hui` : 'Prêt pour la journée 🌿'}</p>`;
     const cards = S.domains.map(d => {
-      const T = S.tasks.filter(t => t.domainId === d.id && visible(t))
-        .sort((a, b) => (R ? 0 : isDone(a) - isDone(b)) || ord(a) - ord(b));
+      const T = S.tasks.filter(t => t.domainId === d.id && visible(t)).sort((a, b) => ord(a) - ord(b));
+      const fold = S.fold.has(d.id), nd = T.filter(isDone).length;
       const rows = T.map(t => {
-        if (R) return `<div class="task" data-sort="${t.id}" style="--c:${d.color}"><span class="tx">${esc(t.text)}</span><span class="grip" aria-label="Déplacer">≡</span></div>`;
         const ok = isDone(t), sub = { daily: 'Tous les jours', weekly: 'Chaque semaine', monthly: 'Chaque mois' }[repeatOf(t)];
-        return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" style="--c:${d.color}">
+        return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" data-sort="${t.id}" style="--c:${d.color}">
           <button class="tk" role="checkbox" aria-checked="${ok}" data-act="tick" data-id="${t.id}"><span class="box">${ok ? '✓' : ''}</span>
             <span class="tx">${esc(t.text)}${sub ? `<br><small>🔁 ${sub}</small>` : ''}${t.note ? `<br><small class="nt">${esc(t.note)}</small>` : ''}</span></button>
           <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button></div>`;
       }).join('');
-      const head = R ? '<span class="grip" aria-label="Déplacer la catégorie">≡</span>' : `<button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button>`;
-      return `<section class="card" data-sort="${d.id}" style="--c:${d.color}"><div class="row"><h2>${d.emoji} ${esc(d.name)}</h2>${head}</div><div class="tl">${rows || '<small>Aucune tâche pour l’instant.</small>'}</div></section>`;
+      return `<section class="card ${fold ? 'fold' : ''}" data-sort="${d.id}" style="--c:${d.color}">
+        <div class="row hd" data-act="fold" data-id="${d.id}"><h2><span class="chev">${fold ? '▸' : '▾'}</span> ${d.emoji} ${esc(d.name)} ${T.length ? `<small>${nd}/${T.length}</small>` : ''}</h2><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button></div>
+        <div class="tl">${rows || '<small>Aucune tâche pour l’instant.</small>'}</div></section>`;
     }).join('');
-    return top + `<div id="doms">${cards}</div>` + (R ? '' : `<button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`);
+    return hello + `<div id="doms">${cards}</div><button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`;
   },
   stats() {
     const t0 = dk(Date.now()), ws = weekStart(), M = S.range === 'month';
@@ -274,13 +269,22 @@ const V = {
         + (w.n ? `<text x="${x + 11}" y="${112 - h}" font-size="10" font-weight="600" text-anchor="middle" fill="currentColor">${w.n}</text>` : '')
         + `<text x="${x + 11}" y="132" font-size="9" text-anchor="middle" fill="currentColor" opacity=".6">${lab}</text>`;
     }).join('');
+    // Répartition par catégorie (semaine ou mois en cours)
+    const PM = S.pie === 'month', PL = PM ? Mo : W, cnt = {};
+    PL.forEach(l => cnt[l.domainId] = (cnt[l.domainId] || 0) + 1);
+    const slices = Object.entries(cnt).map(([id, k]) => ({ d: dom(id), k })).sort((a, b) => b.k - a.k);
+    const C = 2 * Math.PI * 40; let off = 0;
+    const arcs = slices.map(({ d, k }) => { const len = k / PL.length * C, c = `<circle cx="60" cy="60" r="40" fill="none" stroke="${d.color}" stroke-width="22" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`; off += len; return c; }).join('');
+    const pie = `<div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0">Répartition</h2><div class="chips" style="margin:0"><button class="cp sm ${PM ? '' : 'on'}" data-act="pie" data-v="week">Semaine</button><button class="cp sm ${PM ? 'on' : ''}" data-act="pie" data-v="month">Mois</button></div></div>
+      ${PL.length ? `<div class="donut"><svg viewBox="0 0 120 120" role="img" aria-label="Répartition par catégorie">${arcs}<text x="60" y="66" text-anchor="middle" font-size="20" font-weight="800" fill="currentColor">${PL.length}</text></svg>
+      <div class="lgd">${slices.map(({ d, k }) => `<div style="--c:${d.color}"><i></i><span>${d.emoji} ${esc(d.name)}</span><b style="margin-left:auto">${Math.round(k / PL.length * 100)} %</b></div>`).join('')}</div></div>` : '<p class="mu" style="margin:0">Rien d’enregistré sur cette période pour l’instant.</p>'}</div>`;
     // Historique par jour
     const byDay = {}; S.logs.forEach(l => (byDay[dk(l.ts)] ||= []).push(l));
     const list = Object.keys(byDay).sort().reverse().map(k => `<div class="day">${fr(k + 'T12:00', { weekday: 'long', day: 'numeric', month: 'long' })} <small>· ${byDay[k].length}</small></div><div class="card">${byDay[k].map(logRow).join('')}</div>`).join('');
     return `<div class="card hero"><div><b>${L.length}</b><small>aujourd’hui</small></div><div><b>${W.length}</b><small>cette semaine</small></div><div><b>${Mo.length}</b><small>ce mois</small></div></div>
-      <p class="hello">${msg}</p>${rows}
+      <p class="hello">${msg}</p><h2 style="margin:6px 0 8px">🎯 Objectifs de la semaine</h2>${rows}
       <div class="card"><div class="row" style="margin-bottom:8px"><h2 style="margin:0">Tâches faites</h2><div class="chips" style="margin:0"><button class="cp sm ${M ? '' : 'on'}" data-act="range" data-v="week">Semaines</button><button class="cp sm ${M ? 'on' : ''}" data-act="range" data-v="month">Mois</button></div></div>
-      <svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Tâches faites par ${M ? 'mois' : 'semaine'}">${bars}</svg></div>
+      <svg viewBox="0 0 340 142" width="100%" role="img" aria-label="Tâches faites par ${M ? 'mois' : 'semaine'}">${bars}</svg></div>${pie}
       <h2 style="margin-top:18px">Historique</h2>${list || '<p class="mu">Ton historique se remplira au fil des jours.</p>'}`;
   }
 };
@@ -299,7 +303,7 @@ function render() {
   const tabs = [['tasks', '✅', 'Tâches'], ['stats', '📊', 'Statistiques']];
   el.innerHTML = `<header><h1>To-do list</h1><span class="st">${st}</span><button class="ib" data-act="settings" aria-label="Réglages">⚙️</button></header>
     <main>${V[S.view]()}</main>
-    ${S.view === 'tasks' && S.domains.length && !S.reorder ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
+    ${S.view === 'tasks' && S.domains.length ? '<button class="fab" data-act="taskform" data-id="" aria-label="Ajouter une tâche">＋</button>' : ''}
     <nav>${tabs.map(t => `<button class="${S.view === t[0] ? 'on' : ''}" data-act="tab" data-v="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}</nav>`;
   scrollTo(0, y);
 }
@@ -315,20 +319,20 @@ const close = () => { ov?.remove(); ov = null; };
 
 function settings() {
   sheet(`<h2>Réglages</h2>
-    <div class="chips"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="hap">📳 Vibration : ${hapOn() ? 'oui' : 'non'}</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
+    <div class="chips"><button class="cp" data-act="theme">🌓 Clair / sombre</button><button class="cp" data-act="export">⬇️ Exporter (JSON)</button><button class="cp" data-act="logout">Se déconnecter</button></div>
     <small>Compte : ${esc(S.user.email)}<br>Identifiant (UID) : ${esc(S.uid)}</small>`);
 }
 
 const A = {
   login() { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => toast('Connexion impossible : ' + e.code)); },
   logout() { close(); signOut(auth); },
-  tab({ v }) { S.view = v; S.reorder = false; render(); scrollTo(0, 0); },
+  tab({ v }) { S.view = v; render(); scrollTo(0, 0); },
   settings, close,
   theme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('theme', t); },
-  tick({ id }) { haptic(); toggle(id); },
-  reorder() { S.reorder = !S.reorder; render(); },
+  tick({ id }) { toggle(id); },
+  fold({ id }) { S.fold.has(id) ? S.fold.delete(id) : S.fold.add(id); localStorage.setItem('fold', JSON.stringify([...S.fold])); render(); },
+  pie({ v }) { S.pie = v; render(); },
   range({ v }) { S.range = v; render(); },
-  hap() { localStorage.setItem('haptic', hapOn() ? 'off' : 'on'); settings(); },
 
   // --- Tâches ---
   taskform({ id }) {
@@ -403,7 +407,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-act]
 // Sélecteur de couleur libre
 document.addEventListener('input', e => { if (e.target.id === 'dcp') A.pickc({ v: e.target.value }); });
 
-/* ---- Réorganiser par glisser-déposer : on attrape la poignée ≡ ---- */
+/* ---- Réorganiser : appui long sur une tâche (ou sur l'en-tête d'une catégorie), puis glisser ---- */
 function reorder(list, ids) {
   if (list.id === 'doms') {            // catégories
     const m = new Map(S.domains.map(d => [d.id, d]));
@@ -413,8 +417,10 @@ function reorder(list, ids) {
     if (t && t.order !== i) { t.order = i; updateDoc(taskRef(id), { order: i }).catch(err); }
   });
 }
+let hold = null, noClick = 0;
+const holdStop = () => { if (hold) { clearTimeout(hold.t); hold = null; } };
 function place() {                      // l'élément suit le doigt, les autres s'écartent
-  const d = drag, dy = d.y + scrollY - d.start;
+  const d = drag, fy = d.y + scrollY, dy = d.center ? fy - d.mids[d.from] : fy - d.start;
   d.item.style.transform = `translateY(${dy}px)`;
   const mid = d.mids[d.from] + dy;
   d.to = d.mids.filter((m, i) => i !== d.from && m < mid).length;
@@ -428,28 +434,42 @@ function loop() {                       // défilement automatique près des bor
   if (drag.y < 120) scrollBy(0, -12); else if (drag.y > innerHeight - 140) scrollBy(0, 12);
   place(); drag.raf = requestAnimationFrame(loop);
 }
-document.addEventListener('pointerdown', e => {
-  const g = e.target.closest('.grip'); if (!g) return;
-  const item = g.closest('[data-sort]'); if (!item) return;
-  e.preventDefault();
-  const list = item.parentElement, items = [...list.children].filter(x => x.dataset.sort);
-  drag = { item, list, items, from: items.indexOf(item), to: items.indexOf(item), y: e.clientY, start: e.clientY + scrollY,
+function startDrag(h) {
+  const item = document.querySelector(`[data-sort="${CSS.escape(h.id)}"]`); if (!item) return;
+  const list = item.parentElement, cat = list.id === 'doms';
+  if (cat) { list.classList.add('compact'); void list.offsetHeight; }   // catégories : on replie tout pendant le déplacement
+  const items = [...list.children].filter(x => x.dataset.sort);
+  drag = { item, list, items, from: items.indexOf(item), to: items.indexOf(item), y: h.y, start: h.y + scrollY, center: cat, id: h.pid,
     mids: items.map(x => { const r = x.getBoundingClientRect(); return r.top + scrollY + r.height / 2; }),
     sh: item.offsetHeight + (parseFloat(getComputedStyle(item).marginBottom) || 0) };
-  g.setPointerCapture(e.pointerId); item.classList.add('lift'); loop();
+  item.classList.add('lift'); loop();
+}
+document.addEventListener('pointerdown', e => {
+  if (ov || e.target.closest('.ib')) return;
+  const el = e.target.closest('.task[data-sort], #doms > [data-sort] > .hd'); if (!el) return;
+  holdStop();
+  hold = { id: el.closest('[data-sort]').dataset.sort, pid: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { const h = hold; hold = null; startDrag(h); }, 380) };
 });
-document.addEventListener('pointermove', e => { if (drag) drag.y = e.clientY; });
-function drop() {
+document.addEventListener('pointermove', e => {
+  if (hold && e.pointerId === hold.pid && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 10) holdStop();   // c'est un défilement
+  if (drag && e.pointerId === drag.id) drag.y = e.clientY;
+});
+function drop(e) {
+  if (hold && e.pointerId === hold.pid) holdStop();
   if (!drag) return;
-  const d = drag; drag = null; cancelAnimationFrame(d.raf);
+  const d = drag; drag = null; cancelAnimationFrame(d.raf); noClick = Date.now() + 400;
+  d.list.classList.remove('compact');
   d.items.forEach(x => { x.style.transform = ''; x.classList.remove('lift'); });
-  if (d.to !== d.from) {
+  if (e.type === 'pointerup' && d.to !== d.from) {
     const ids = d.items.map(x => x.dataset.sort); ids.splice(d.to, 0, ids.splice(d.from, 1)[0]);
-    reorder(d.list, ids); haptic();
+    reorder(d.list, ids);
   }
   render();
 }
 document.addEventListener('pointerup', drop); document.addEventListener('pointercancel', drop);
+document.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive: false });   // bloque le défilement pendant le glisser
+document.addEventListener('contextmenu', e => { if (hold || drag) e.preventDefault(); });
+document.addEventListener('click', e => { if (Date.now() < noClick) { e.stopPropagation(); e.preventDefault(); } }, true);  // pas de « clic » à la fin d'un glisser
 
 // Touche Entrée = Enregistrer dans les formulaires
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click(); });
