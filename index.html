@@ -113,6 +113,10 @@ textarea{width:100%;padding:10px 12px;margin:0 0 12px;border-radius:12px;border:
 .cu{position:relative;background:conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#6366f1,#d946ef,#ef4444)}
 .cu.on{background:radial-gradient(circle,var(--c) 0 42%,transparent 44%),conic-gradient(#ef4444,#eab308,#22c55e,#06b6d4,#6366f1,#d946ef,#ef4444)}
 .cu input{position:absolute;inset:0;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;opacity:0;cursor:pointer}
+/* Lignes de tâches : hauteur fixe, texte et note tronqués avec « … » */
+.task{height:60px}
+.task .tx{display:flex;flex-direction:column;overflow:hidden}
+.ln{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -232,7 +236,7 @@ const V = {
         const ok = isDone(t), sub = { daily: 'Tous les jours', weekly: 'Chaque semaine', monthly: 'Chaque mois' }[repeatOf(t)];
         return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" data-sort="${t.id}" style="--c:${d.color}">
           <button class="tk" role="checkbox" aria-checked="${ok}" data-act="tick" data-id="${t.id}"><span class="box">${ok ? '✓' : ''}</span>
-            <span class="tx">${esc(t.text)}${sub ? `<br><small>🔁 ${sub}</small>` : ''}${t.note ? `<br><small class="nt">${esc(t.note)}</small>` : ''}</span></button>
+            <span class="tx"><span class="ln">${esc(t.text)}</span>${sub || t.note ? `<small class="ln">${esc([sub && '🔁 ' + sub, t.note].filter(Boolean).join(' · '))}</small>` : ''}</span></button>
           <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button></div>`;
       }).join('');
       return `<section class="card ${fold ? 'fold' : ''}" data-sort="${d.id}" style="--c:${d.color}">
