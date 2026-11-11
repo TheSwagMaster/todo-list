@@ -121,6 +121,18 @@ textarea{width:100%;padding:10px 12px;margin:0 0 12px;border-radius:12px;border:
 .add input{border:0;background:transparent;margin:0;min-height:44px;padding:0 4px}
 .add input::placeholder{color:var(--mu)}
 .add input:focus-visible{outline:0}
+.grip{width:36px;height:44px;flex:none;display:grid;place-items:center;font-size:22px;color:var(--mu);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ctl{display:flex;align-items:center;flex:none}
+.lbl{font-size:14px;color:var(--mu);margin:8px 0 2px}
+.ci{display:flex;align-items:center;gap:10px;min-height:44px;border-bottom:1px solid var(--ln)}
+.ci span,.ci a{flex:1;min-width:0}
+.ci span{overflow-wrap:anywhere}
+.ci a{color:var(--ac);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci .dn{text-decoration:line-through;color:var(--mu)}
+.ci .ib{width:36px;height:36px;font-size:18px;color:var(--mu)}
+.ck2{width:28px;height:28px;border-radius:8px;border:2.5px solid var(--ac);flex:none;color:#fff;font-weight:700;line-height:1}
+.ck2.on{background:var(--ac)}
+.addrow{display:flex;gap:8px;margin:8px 0 14px}.addrow input{margin:0}.addrow .cp{flex:none}
 </style>
 </head>
 <body>
@@ -157,7 +169,7 @@ const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabMana
    users/{uid}/logs/{id}    → une ligne d'historique créée à chaque case cochée
    ============================================================ */
 const S = { user: null, uid: null, domains: [], logs: [], tasks: [], view: 'tasks', last: '', just: '', range: 'week', pie: 'week', fold: new Set(JSON.parse(localStorage.getItem('fold') || '[]')) };
-let unsubs = [], ov = null, drag = null;
+let unsubs = [], ov = null, drag = null, F = { id: '', items: [], links: [] };   // F = liste et liens de la tâche en cours d'édition
 const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308', '#14B8A6', '#64748B', '#EF4444', '#6366F1', '#84CC16', '#78350F'];
 
 const $ = s => document.querySelector(s);
@@ -238,13 +250,15 @@ const V = {
       const fold = S.fold.has(d.id), nd = T.filter(isDone).length;
       const rows = T.map(t => {
         const ok = isDone(t), sub = { daily: 'Tous les jours', weekly: 'Chaque semaine', monthly: 'Chaque mois' }[repeatOf(t)];
+        const it = t.items || [], lk = t.links || [];
+        const meta = [sub && '🔁 ' + sub, it.length && `☑ ${it.filter(x => x.d).length}/${it.length}`, lk.length && `🔗 ${lk.length}`, t.note].filter(Boolean).join(' · ');
         return `<div class="task ${ok ? 'done' : ''} ${S.just === t.id ? 'just' : ''}" data-sort="${t.id}" style="--c:${d.color}">
           <button class="tk" role="checkbox" aria-checked="${ok}" data-act="tick" data-id="${t.id}"><span class="box">${ok ? '✓' : ''}</span>
-            <span class="tx"><span class="ln">${esc(t.text)}</span>${sub || t.note ? `<small class="ln">${esc([sub && '🔁 ' + sub, t.note].filter(Boolean).join(' · '))}</small>` : ''}</span></button>
-          <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button></div>`;
+            <span class="tx"><span class="ln">${esc(t.text)}</span>${meta ? `<small class="ln">${esc(meta)}</small>` : ''}</span></button>
+          <button class="ib" data-act="taskform" data-id="${t.id}" aria-label="Modifier">✎</button><span class="grip" aria-label="Déplacer">≡</span></div>`;
       }).join('');
       return `<section class="card ${fold ? 'fold' : ''}" data-sort="${d.id}" style="--c:${d.color}">
-        <div class="row hd" data-act="fold" data-id="${d.id}"><h2><span class="chev">${fold ? '▸' : '▾'}</span> ${d.emoji} ${esc(d.name)} ${T.length ? `<small>${nd}/${T.length}</small>` : ''}</h2><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button></div>
+        <div class="row hd" data-act="fold" data-id="${d.id}"><h2><span class="chev">${fold ? '▸' : '▾'}</span> ${d.emoji} ${esc(d.name)} ${T.length ? `<small>${nd}/${T.length}</small>` : ''}</h2><span class="ctl"><button class="ib" data-act="domform" data-id="${d.id}" aria-label="Modifier la catégorie">✎</button><span class="grip" aria-label="Déplacer la catégorie">≡</span></span></div>
         <div class="tl">${rows}<div class="add"><input data-add="${d.id}" placeholder="＋ Ajouter une tâche" maxlength="120" enterkeyhint="done" aria-label="Ajouter une tâche dans ${esc(d.name)}"></div></div></section>`;
     }).join('');
     return hello + `<div id="doms">${cards}</div><button class="cp" data-act="domform" data-id="">＋ Nouvelle catégorie</button>`;
@@ -347,19 +361,22 @@ const A = {
   // --- Tâches ---
   taskform({ id }) {
     const t = id ? S.tasks.find(x => x.id === id) : { domainId: S.last, repeat: 'none', text: '' };
+    F = { id: id || '', items: (t.items || []).map(x => ({ ...x })), links: [...(t.links || [])] };
     const sel = S.domains.some(d => d.id === t.domainId) ? t.domainId : S.domains[0].id;
     sheet(`<h2>${id ? 'Modifier la tâche' : 'Nouvelle tâche'}</h2>
       <input id="tt" placeholder="Ex. Courir 30 minutes" maxlength="120" value="${esc(t.text)}">
       <select id="td" aria-label="Catégorie">${S.domains.map(x => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${x.emoji} ${esc(x.name)}</option>`).join('')}</select>
       <select id="tp" aria-label="Répétition">${[['none', 'Ponctuelle'], ['daily', 'Tous les jours'], ['weekly', 'Toutes les semaines'], ['monthly', 'Tous les mois']].map(([v, l]) => `<option value="${v}" ${v === repeatOf(t) ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <textarea id="tn" rows="3" maxlength="500" placeholder="Note (facultatif)">${esc(t.note)}</textarea>
+      <div id="ext">${extHTML()}</div>
       ${id ? '' : '<label class="chk"><input type="checkbox" id="tf"> Déjà fait</label>'}
       <button class="big" data-act="saveTask" data-id="${id || ''}">Enregistrer</button>
       ${id ? `<button class="ghost" data-act="delTask" data-id="${id}">Supprimer la tâche</button>` : ''}`);
     setTimeout(() => $('#tt')?.focus(), 50);
   },
   saveTask({ id }) {
-    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, repeat: $('#tp').value, perWeek: 0, note: $('#tn').value.trim() };
+    pushItem(); pushLink();            // texte saisi mais pas encore ajouté avec ＋
+    const o = { text: $('#tt').value.trim(), domainId: $('#td').value, repeat: $('#tp').value, perWeek: 0, note: $('#tn').value.trim(), items: F.items, links: F.links };
     if (!o.text) return;
     S.last = o.domainId;
     if (id) updateDoc(taskRef(id), o).catch(err);
@@ -413,11 +430,41 @@ const A = {
   }
 };
 // Un seul écouteur de clics pour toute l'appli (attributs data-act)
-document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act]?.(b.dataset); });
+document.addEventListener('click', e => { if (e.target.closest('.grip')) return; const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act]?.(b.dataset); });
 // Sélecteur de couleur libre
 document.addEventListener('input', e => { if (e.target.id === 'dcp') A.pickc({ v: e.target.value }); });
 
-/* ---- Réorganiser : appui long sur une tâche (ou sur l'en-tête d'une catégorie), puis glisser ---- */
+/* ---- Liste à cocher et liens d'une tâche (sauvegardés tout de suite pour une tâche existante) ---- */
+function extHTML() {
+  return `<p class="lbl">Liste à cocher</p>
+    ${F.items.map((x, i) => `<div class="ci"><button class="ck2 ${x.d ? 'on' : ''}" data-act="citem" data-i="${i}" aria-label="Cocher">${x.d ? '✓' : ''}</button><span class="${x.d ? 'dn' : ''}">${esc(x.t)}</span><button class="ib" data-act="delitem" data-i="${i}" aria-label="Supprimer">×</button></div>`).join('')}
+    <div class="addrow"><input id="ni" placeholder="Ajouter un élément" maxlength="120" enterkeyhint="done"><button class="cp sm" data-act="additem" aria-label="Ajouter">＋</button></div>
+    <p class="lbl">Liens</p>
+    ${F.links.map((u, i) => `<div class="ci"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(u.replace(/^https?:\/\/(www\.)?/, ''))}</a><button class="ib" data-act="dellink" data-i="${i}" aria-label="Supprimer">×</button></div>`).join('')}
+    <div class="addrow"><input id="nl" type="url" placeholder="Ajouter un lien (https://…)" maxlength="500" autocapitalize="off" enterkeyhint="done"><button class="cp sm" data-act="addlink" aria-label="Ajouter">＋</button></div>`;
+}
+function refreshExt(focus) {            // redessine sans perdre ce qui est en cours de saisie
+  const ni = $('#ni')?.value || '', nl = $('#nl')?.value || '';
+  $('#ext').innerHTML = extHTML(); $('#ni').value = ni; $('#nl').value = nl;
+  if (focus) $(focus)?.focus();
+}
+const saveExt = () => { if (F.id) updateDoc(taskRef(F.id), { items: F.items, links: F.links }).catch(err); };
+function pushItem() { const i = $('#ni'), v = i?.value.trim(); if (!v) return false; F.items.push({ t: v, d: false }); i.value = ''; return true; }
+function pushLink() {                   // seuls http et https sont acceptés
+  const i = $('#nl'); let v = i?.value.trim(); if (!v) return false;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = 'https://' + v;
+  try { const u = new URL(v); if (!/^https?:$/.test(u.protocol)) throw 0; F.links.push(u.href); i.value = ''; return true; }
+  catch (e) { toast('Lien invalide'); return false; }
+}
+Object.assign(A, {
+  additem() { if (pushItem()) { saveExt(); refreshExt('#ni'); } },
+  addlink() { if (pushLink()) { saveExt(); refreshExt('#nl'); } },
+  citem({ i }) { F.items[+i].d = !F.items[+i].d; saveExt(); refreshExt(); },
+  delitem({ i }) { F.items.splice(+i, 1); saveExt(); refreshExt(); },
+  dellink({ i }) { F.links.splice(+i, 1); saveExt(); refreshExt(); }
+});
+
+/* ---- Réorganiser : on attrape la poignée ≡ (à la souris, la ligne elle-même suffit) ---- */
 function reorder(list, ids) {
   if (list.id === 'doms') {            // catégories
     const m = new Map(S.domains.map(d => [d.id, d]));
@@ -455,13 +502,15 @@ function startDrag(h) {
   item.classList.add('lift'); loop();
 }
 document.addEventListener('pointerdown', e => {
-  if (ov || e.target.closest('.ib')) return;
-  const el = e.target.closest('.task[data-sort], #doms > [data-sort] > .hd'); if (!el) return;
-  holdStop();
-  hold = { id: el.closest('[data-sort]').dataset.sort, pid: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { const h = hold; hold = null; startDrag(h); }, 380) };
+  if (ov) return;
+  const g = e.target.closest('.grip');
+  const el = g ? g.closest('[data-sort]') : e.pointerType === 'mouse' && !e.target.closest('.ib, input') ? e.target.closest('.task[data-sort], #doms > [data-sort] > .hd') : null;
+  if (!el) return;
+  const h = { id: el.closest('[data-sort]').dataset.sort, pid: e.pointerId, x: e.clientX, y: e.clientY };
+  if (g) { e.preventDefault(); startDrag(h); } else hold = h;   // poignée : départ immédiat ; souris sur la ligne : après 6 px
 });
 document.addEventListener('pointermove', e => {
-  if (hold && e.pointerId === hold.pid && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 10) holdStop();   // c'est un défilement
+  if (hold && e.pointerId === hold.pid && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 6) { const h = { ...hold, y: e.clientY }; hold = null; startDrag(h); }
   if (drag && e.pointerId === drag.id) drag.y = e.clientY;
 });
 function drop(e) {
@@ -485,6 +534,8 @@ document.addEventListener('click', e => { if (Date.now() < noClick) { e.stopProp
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   if (e.target.matches('#tt,#dn')) ov?.querySelector('.big')?.click();
+  if (e.target.id === 'ni') { e.preventDefault(); A.additem(); }
+  if (e.target.id === 'nl') { e.preventDefault(); A.addlink(); }
   const id = e.target.dataset?.add;     // ligne « ＋ Ajouter une tâche » d'une catégorie : Entrée = créer
   if (id !== undefined) {
     const text = e.target.value.trim(); if (!text) return;
