@@ -216,6 +216,19 @@ label { display:block; font-size:.875rem; color:var(--mu); }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation:none!important; transition:none!important; }
 }
+/* Suggestions d’emoji dans le formulaire de catégorie */
+.emoji-picker { margin-bottom:14px; }
+.emoji-picker label { margin-bottom:4px; }
+.emoji-picker .row { justify-content:flex-start; }
+.emoji-picker .row > input:first-child { width:58px; flex:none; text-align:center; }
+.emoji-results { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.emoji-results button {
+  width:var(--touch); height:var(--touch); border-radius:var(--control); text-align:center;
+  background:var(--field); border-color:var(--ln); font-size:23px;
+}
+.emoji-results button:hover,.emoji-results button[aria-pressed=true] { border-color:var(--ac); }
+.emoji-status { margin:5px 0 0; font-size:.875rem; }
+#de,.emoji-results button { font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
 </style>
 </head>
 <body>
@@ -257,6 +270,42 @@ const COLORS = ['#8B5CF6', '#F97316', '#0EA5E9', '#E11D74', '#16A34A', '#EAB308'
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const EMOJIS = [
+  ['⭐','Étoile priorité important favori'], ['✅','Terminé tâche validation'], ['📌','Épingle rappel priorité'],
+  ['📝','Note écrire liste tâches'], ['💼','Travail bureau professionnel emploi'], ['💻','Ordinateur informatique code développement'],
+  ['📅','Calendrier rendez-vous agenda'], ['⏰','Réveil heure rappel chrono'], ['🎯','Objectif cible projet'],
+  ['🏠','Maison logement domicile'], ['🧹','Ménage balai nettoyer nettoyage'], ['🛒','Courses achats supermarché'],
+  ['🍳','Cuisine cuisiner repas nourriture'], ['🍽️','Repas dîner déjeuner restaurant'], ['☕','Café pause boisson'],
+  ['🏃','Course courir running sport footing'], ['🏋️','Musculation sport fitness poids haltères entraînement'],
+  ['🚴','Vélo cyclisme sport'], ['🏊','Natation piscine nager sport'], ['🧘','Yoga méditation détente relaxation'],
+  ['❤️','Cœur amour santé'], ['💊','Médicament santé pharmacie'], ['🦷','Dent dentiste santé'],
+  ['📚','Livres lecture lire études bibliothèque'], ['🎓','Études école diplôme formation'], ['✍️','Écriture écrire journal'],
+  ['🎨','Art peinture dessin création créatif'], ['🎵','Musique chanson chant'], ['🎧','Casque écouter podcast musique audio'],
+  ['📷','Photo appareil photographie'], ['🎮','Jeu jeux vidéo manette'], ['🎬','Cinéma film vidéo tournage'],
+  ['🧳','Valise vacances voyage bagage'], ['✈️','Avion voyage vol vacances'], ['🚗','Voiture auto trajet transport'],
+  ['🚆','Train gare trajet transport'], ['🏖️','Plage vacances mer été'], ['🌿','Plante jardin nature écologie'],
+  ['🌱','Pousse jardinage plante habitudes'], ['🐶','Chien animal promenade'], ['🐱','Chat animal'],
+  ['👪','Famille enfants parents'], ['🎁','Cadeau anniversaire fête'], ['🎉','Fête célébration anniversaire'],
+  ['💰','Argent finances budget épargne'], ['💳','Carte paiement banque budget'], ['🧾','Facture reçu administratif'],
+  ['📦','Colis livraison rangement'], ['🛠️','Outils réparation bricolage travaux'], ['🧺','Linge lessive panier lavage'],
+  ['🌙','Lune soir sommeil nuit'], ['☀️','Soleil matin météo'], ['💧','Eau boire hydratation'],
+  ['🍎','Pomme fruit alimentation santé'], ['🔒','Cadenas sécurité mot de passe'], ['📞','Téléphone appel contacter'],
+  ['✉️','Courrier courriel email message'], ['🗂️','Dossiers classement organisation'], ['🚀','Fusée lancement projet']
+];
+const emojiWords = text => text.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').match(/[a-z0-9]+/g) || [];
+function renderEmojiResults() {
+  const search = $('#emoji-search'), current = $('#de').value.trim();
+  const terms = emojiWords(search.value);
+  const matches = EMOJIS.filter(([, label]) => {
+    const words = emojiWords(label);
+    return terms.every(term => words.some(word => word.startsWith(term)));
+  });
+  const suggestions = matches.slice(0, terms.length ? 12 : 9);
+  $('#emoji-results').innerHTML = suggestions.map(([emoji, label]) =>
+    `<button type="button" data-act="pickEmoji" data-v="${emoji}" aria-label="${label}" title="${label}" aria-pressed="${emoji === current}">${emoji}</button>`
+  ).join('');
+  $('#emoji-status').textContent = suggestions.length ? '' : 'Aucun résultat. Essaie un autre mot ou saisis ton emoji.';
+}
 const pad = n => String(n).padStart(2, '0');
 const dk = d => { d = new Date(d); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const wk = d => { d = new Date(d); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; }; // lundi
@@ -489,13 +538,27 @@ const A = {
   domform({ id }) {
     const d = S.domains.find(x => x.id === id) || { name: '', emoji: '⭐', color: COLORS[S.domains.length % COLORS.length], goal: 0 };
     sheet(`<h2>${id ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</h2>
-      <div class="row" style="margin-bottom:12px"><input id="de" style="width:70px;text-align:center" value="${esc(d.emoji)}" maxlength="4" aria-label="Emoji"><input id="dn" placeholder="Nom" maxlength="40" value="${esc(d.name)}"></div>
+      <input id="dn" placeholder="Nom" aria-label="Nom de la catégorie" maxlength="40" value="${esc(d.name)}">
+      <div class="emoji-picker">
+        <label for="emoji-search">Emoji de la catégorie</label>
+        <div class="row"><input id="de" value="${esc(d.emoji)}" aria-label="Emoji sélectionné, modifiable directement">
+          <input id="emoji-search" type="search" placeholder="Ex. sport, maison, lecture" autocomplete="off"></div>
+        <div id="emoji-results" class="emoji-results" role="group" aria-label="Emojis suggérés"></div>
+        <p id="emoji-status" class="emoji-status mu" role="status"></p>
+      </div>
       <input id="dc" type="hidden" value="${d.color}">
       <div class="chips" id="sws">${[...new Set([d.color, ...COLORS])].map(c => `<button class="sw ${c === d.color ? 'on' : ''}" style="--c:${c}" data-act="pickc" data-v="${c}" aria-label="Couleur"></button>`).join('')}<label class="sw cu" id="cu" aria-label="Couleur personnalisée"><input type="color" id="dcp" value="${d.color}"></label></div>
       <label>Objectif par semaine (nombre de tâches faites, 0 = aucun)</label><input id="dg" type="number" inputmode="numeric" min="0" value="${d.goal || 0}">
       <button class="big" data-act="saveDom" data-id="${id || ''}">Enregistrer</button>
       ${id ? `<button class="ghost" data-act="delDom" data-id="${id}">Supprimer la catégorie</button>` : ''}`);
+    renderEmojiResults();
     if (!id) setTimeout(() => $('#dn')?.focus(), 50);
+  },
+  pickEmoji({ v }) {
+    $('#de').value = v;
+    document.querySelectorAll('#emoji-results button').forEach(button =>
+      button.setAttribute('aria-pressed', button.dataset.v === v)
+    );
   },
   pickc({ v }) {
     $('#dc').value = v;
@@ -525,7 +588,10 @@ const A = {
 // Un seul écouteur de clics pour toute l'appli (attributs data-act)
 document.addEventListener('click', e => { if (e.target.closest('.grip')) return; const b = e.target.closest('[data-act]'); if (b) A[b.dataset.act]?.(b.dataset); });
 // Sélecteur de couleur libre
-document.addEventListener('input', e => { if (e.target.id === 'dcp') A.pickc({ v: e.target.value }); });
+document.addEventListener('input', e => {
+  if (e.target.id === 'dcp') A.pickc({ v: e.target.value });
+  if (e.target.id === 'emoji-search' || e.target.id === 'de') renderEmojiResults();
+});
 
 /* ---- Liste à cocher et liens d'une tâche (sauvegardés tout de suite pour une tâche existante) ---- */
 function extHTML() {
